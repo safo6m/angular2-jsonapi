@@ -41,32 +41,25 @@ export class JsonApiDatastore {
 
   constructor(protected http: HttpClient) {}
 
-  /** @deprecated - use findAll method to take all models **/
-  query<T extends JsonApiModel>(
-    modelType: ModelType<T>,
-    params?: any,
-    headers?: Headers,
-    customUrl?: string
-  ): Observable<T[]> {
-    const requestHeaders: HttpHeaders = this.buildHeaders(headers);
-    const url: string = this.buildUrl(modelType, params, undefined, customUrl);
-    return this.http.get(url, { headers: requestHeaders })
-      .map((res: any) => this.extractQueryData(res, modelType))
-      .catch((res: any) => this.handleError(res));
-  }
-
   findAll<T extends JsonApiModel>(
     modelType: ModelType<T>,
     params?: any,
     headers?: Headers,
-    customUrl?: string
+    customUrl?: string,
+    http2: boolean = false
   ): Observable<JsonApiQueryData<T>> {
     const requestHeaders: HttpHeaders = this.buildHeaders(headers);
     const url: string = this.buildUrl(modelType, params, undefined, customUrl);
 
-    return this.http.get(url, { headers: requestHeaders })
-      .map((res: any) => this.extractQueryData(res, modelType, true))
-      .catch((res: any) => this.handleError(res));
+    if (!http2) {
+      return this.http.get(url, { headers: requestHeaders })
+        .map((res: any) => this.extractQueryData(res, modelType, true))
+        .catch((res: any) => this.handleError(res));
+    } else {
+      return this.http.get(url, { headers: requestHeaders })
+        .map((res: any) => this.fetchRelationships(res, ))
+        .catch((res: any) => this.handleError(res));
+    }
   }
 
   findRecord<T extends JsonApiModel>(
@@ -249,6 +242,37 @@ export class JsonApiDatastore {
     }
 
     return relationShipData;
+  }
+
+  private fetchRelationships<T extends JsonApiModel>(
+    body: any,
+    modelType: ModelType<T>,
+    relationshipNames: Array<string> = [],
+    withMeta = false
+  ) {
+    const models: Array<T> = [];
+
+    body.data.forEach((data: any) => {
+      const model: T = this.deserializeModel(modelType, data);
+      this.addToStore(model);
+
+      relationshipNames.forEach((relationshipName: string) => {
+        debugger
+      });
+
+      // if (body.included) {
+      //   model.syncRelationships(data, body.included);
+      //   this.addToStore(model);
+      // }
+
+      models.push(model);
+    });
+
+    if (withMeta && withMeta === true) {
+      return new JsonApiQueryData(models, this.parseMeta(body, modelType));
+    }
+
+    return models;
   }
 
   protected extractQueryData<T extends JsonApiModel>(
