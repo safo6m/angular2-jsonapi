@@ -64,14 +64,20 @@ export class JsonApiDatastore {
       // ===> profileImage.consumer.info is enough
       // filter out the rest
       const filteredRelationshipNames = relationshipNames.filter((relationshipName: string) => {
-        return !relationshipNames.some((name: string) => name.startsWith(relationshipName));
+        return !relationshipNames.some((name: string) => name.startsWith(`${relationshipName}.`));
       });
 
       // TODO: X-Push-Related: parent relationships from filteredRelationshipNames
       // ie. [profileNames.info, consumer.nesto] ===> profileNames,consumer
 
       return this.http.get(url, { headers: requestHeaders })
-        .map((res: any) => this.handleQueryRelationships(res, modelType, true, filteredRelationshipNames))
+        .map((res: any) => this.handleQueryRelationships(
+          res,
+          modelType,
+          true,
+          filteredRelationshipNames,
+          requestHeaders
+        ))
         .catch((res: any) => this.handleError(res));
     }
   }
@@ -262,7 +268,8 @@ export class JsonApiDatastore {
     body: any,
     modelType: ModelType<T>,
     withMeta = false,
-    relationshipNames: Array<string> = []
+    relationshipNames: Array<string> = [],
+    requestHeaders: HttpHeaders
   ) {
     const models: Array<T> = [];
 
@@ -283,9 +290,12 @@ export class JsonApiDatastore {
           const deepRelationshipName: Array<string> = relationShipParts.splice(1);
 
           this.http
-              .get(relationshipUrl)
+              .get(relationshipUrl, { headers: requestHeaders })
               .map((res: any) => this.fetchRelationships(res, modelType, true, deepRelationshipName))
-              .catch((res: any) => this.handleError(res));
+              .catch((res: any) => this.handleError(res))
+              .subscribe((p) => {
+                debugger;
+              });
         }
 
         // Make a reqest
