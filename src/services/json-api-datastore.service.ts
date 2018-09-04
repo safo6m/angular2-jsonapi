@@ -56,8 +56,10 @@ export class JsonApiDatastore {
         .map((res: any) => this.extractQueryData(res, modelType, true))
         .catch((res: any) => this.handleError(res));
     } else {
+      const relationshipNames = params.include.split(',');
+
       return this.http.get(url, { headers: requestHeaders })
-        .map((res: any) => this.fetchRelationships(res, ))
+        .map((res: any) => this.fetchRelationships(res, modelType, true, relationshipNames))
         .catch((res: any) => this.handleError(res));
     }
   }
@@ -247,17 +249,17 @@ export class JsonApiDatastore {
   private fetchRelationships<T extends JsonApiModel>(
     body: any,
     modelType: ModelType<T>,
-    relationshipNames: Array<string> = [],
-    withMeta = false
+    withMeta = false,
+    relationshipNames: Array<string> = []
   ) {
     const models: Array<T> = [];
 
-    body.data.forEach((data: any) => {
+    body.data.forEach((data: object) => {
       const model: T = this.deserializeModel(modelType, data);
       this.addToStore(model);
 
       relationshipNames.forEach((relationshipName: string) => {
-        debugger
+        debugger;
       });
 
       // if (body.included) {
