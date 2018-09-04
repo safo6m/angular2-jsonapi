@@ -311,7 +311,7 @@ export class JsonApiDatastore {
     return models;
   }
 
-  private fetchRelationships<T>(
+  private fetchRelationships<T extends JsonApiModel>(
     body: any,
     modelType: ModelType<T>,
     withMeta = false,
