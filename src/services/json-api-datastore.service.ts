@@ -56,10 +56,22 @@ export class JsonApiDatastore {
         .map((res: any) => this.extractQueryData(res, modelType, true))
         .catch((res: any) => this.handleError(res));
     } else {
-      const relationshipNames = params.include.split(',');
+      const relationshipNames = params.include
+                                      .split(',')
+                                      .filter((relationshipName: string) => relationshipName);
+
+      // ie. profileImage,profileImage.consumer,profileImage.consumer.info
+      // ===> profileImage.consumer.info is enough
+      // filter out the rest
+      const filteredRelationshipNames = relationshipNames.filter((relationshipName: string) => {
+        return !relationshipNames.some((name: string) => name.startsWith(relationshipName));
+      });
+
+      // TODO: X-Push-Related: parent relationships from filteredRelationshipNames
+      // ie. [profileNames.info, consumer.nesto] ===> profileNames,consumer
 
       return this.http.get(url, { headers: requestHeaders })
-        .map((res: any) => this.fetchRelationships(res, modelType, true, relationshipNames))
+        .map((res: any) => this.handleQueryRelationships(res, modelType, true, filteredRelationshipNames))
         .catch((res: any) => this.handleError(res));
     }
   }
@@ -246,7 +258,7 @@ export class JsonApiDatastore {
     return relationShipData;
   }
 
-  private fetchRelationships<T extends JsonApiModel>(
+  private handleQueryRelationships<T extends JsonApiModel>(
     body: any,
     modelType: ModelType<T>,
     withMeta = false,
@@ -254,12 +266,34 @@ export class JsonApiDatastore {
   ) {
     const models: Array<T> = [];
 
-    body.data.forEach((data: object) => {
+    body.data.forEach((data: any) => {
       const model: T = this.deserializeModel(modelType, data);
       this.addToStore(model);
 
       relationshipNames.forEach((relationshipName: string) => {
+        const relationShipParts = relationshipName.split('.');
+        const parentRelationshipName = relationShipParts[0];
+
+        if (data.relationships &&
+          data.relationships[parentRelationshipName] &&
+          data.relationships[parentRelationshipName].links &&
+          data.relationships[parentRelationshipName].links.self
+        ) {
+          const relationshipUrl = data.relationships[parentRelationshipName].links.self;
+          const deepRelationshipName: Array<string> = relationShipParts.splice(1);
+
+          this.http
+              .get(relationshipUrl)
+              .map((res: any) => this.fetchRelationships(res, modelType, true, deepRelationshipName))
+              .catch((res: any) => this.handleError(res));
+        }
+
+        // Make a reqest
+        // Napravi model iz responsea
+        // Zalijepi response na "model"
+        // idi dublje i radi isto
         debugger;
+
       });
 
       // if (body.included) {
@@ -275,6 +309,15 @@ export class JsonApiDatastore {
     }
 
     return models;
+  }
+
+  private fetchRelationships<T>(
+    body: any,
+    modelType: ModelType<T>,
+    withMeta = false,
+    relationshipNames: Array<string> = []
+  ) {
+    debugger
   }
 
   protected extractQueryData<T extends JsonApiModel>(
