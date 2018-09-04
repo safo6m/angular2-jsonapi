@@ -317,7 +317,7 @@ export class JsonApiDatastore {
     withMeta = false,
     relationshipNames: Array<string> = []
   ) {
-    debugger
+    debugger;
   }
 
   protected extractQueryData<T extends JsonApiModel>(
