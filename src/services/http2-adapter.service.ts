@@ -29,7 +29,7 @@ export abstract class Http2AdapterService {
 
     return this.http.get(options.requestUrl, { headers: options.requestHeaders })
       .map((response: any) => {
-        const models = this.generateModels(response, response.data, options.modelType);
+        const models = this.generateModels(response.data, options.modelType);
         return new JsonApiQueryData(models, this.parseMeta(response, options.modelType));
       })
       .map((queryData: JsonApiQueryData<T>) => {
@@ -54,10 +54,14 @@ export abstract class Http2AdapterService {
 
               this.http.get(relationshipUrl, { headers: options.requestHeaders })
                 .map((response: any) => {
-                  debugger
-                  // const models = this.generateModels(response, response.data, options.modelType);
-                  // return new JsonApiQueryData(models, this.parseMeta(response, options.modelType));
-                });
+                  const modelType = this.getModelClassFromType(response.data.type);
+                  const relationshipModel = this.generateModel(response.data, modelType);
+
+                  this.addToStore(relationshipModel);
+                  model[relationshipName] = relationshipModel;
+
+                  return relationshipModel;
+                }).subscribe();
             }
           });
         });
@@ -67,7 +71,7 @@ export abstract class Http2AdapterService {
       // TODO: .catch((res: any) => this.handleError(res));
   }
 
-  private generateModels<T extends JsonApiModel>(body: any, modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
+  private generateModels<T extends JsonApiModel>(modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
     return modelsData.map((modelData: any) => this.generateModel(modelData, modelType));
   }
 
@@ -140,4 +144,5 @@ export abstract class Http2AdapterService {
 
   protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
   public abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
+  protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
 }
