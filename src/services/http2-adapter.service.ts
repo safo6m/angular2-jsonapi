@@ -25,20 +25,24 @@ export abstract class Http2AdapterService {
     // ie. [profileNames.info, consumer.nesto] ===> profileNames,consumer
 
     return this.http.get(options.requestUrl, { headers: options.requestHeaders })
-      .map((response: any) => this.generateModels(response.data, options.modelType))
-      .map((x) => {
-        debugger;
+      .map((response: any) => {
+        const models = this.generateModels(response, response.data, options.modelType);
+        return new JsonApiQueryData(models, this.parseMeta(response, options.modelType));
       })
-      .map((res: any) => this.handleQueryRelationships(
-        res,
-        options.modelType,
-        true,
-        filteredRelationshipNames
-      ));
+      .map((queryData: JsonApiQueryData<T>) => {
+        const models: Array<T> = queryData.getModels();
+        models.forEach((model: T) => {
+          this.addToStore(model);
+        });
+
+        debugger
+
+        return queryData;
+      });
       // TODO: .catch((res: any) => this.handleError(res));
   }
 
-  private generateModels<T extends JsonApiModel>(modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
+  private generateModels<T extends JsonApiModel>(body: any, modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
     return modelsData.map((modelData: any) => this.generateModel(modelData, modelType));
   }
 
@@ -108,4 +112,7 @@ export abstract class Http2AdapterService {
     modelData: any,
     modelType: ModelType<T>
   ): T;
+
+  protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
+  public abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
 }
