@@ -13,10 +13,11 @@ export declare abstract class Http2AdapterService {
     protected http: HttpClient;
     constructor(http: HttpClient);
     findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>>;
-    private generateModels<T>(body, modelsData, modelType);
+    private generateModels<T>(modelsData, modelType);
     private filterUnecessaryIncludes(includes);
     private fetchRelationships<T>(originalModel, body, modelType, withMeta?, relationshipNames?);
     protected abstract generateModel<T extends JsonApiModel>(modelData: any, modelType: ModelType<T>): T;
     protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
     abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
+    protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
 }

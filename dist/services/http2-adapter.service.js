@@ -17,7 +17,7 @@ var Http2AdapterService = /** @class */ (function () {
         options.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
         return this.http.get(options.requestUrl, { headers: options.requestHeaders })
             .map(function (response) {
-            var models = _this.generateModels(response, response.data, options.modelType);
+            var models = _this.generateModels(response.data, options.modelType);
             return new json_api_query_data_1.JsonApiQueryData(models, _this.parseMeta(response, options.modelType));
         })
             .map(function (queryData) {
@@ -36,10 +36,12 @@ var Http2AdapterService = /** @class */ (function () {
                         options.requestHeaders.set('X-Push-Related', topXPushRelated_1.join(','));
                         _this.http.get(relationshipUrl, { headers: options.requestHeaders })
                             .map(function (response) {
-                            debugger;
-                            // const models = this.generateModels(response, response.data, options.modelType);
-                            // return new JsonApiQueryData(models, this.parseMeta(response, options.modelType));
-                        });
+                            var modelType = _this.getModelClassFromType(response.data.type);
+                            var relationshipModel = _this.generateModel(response.data, modelType);
+                            _this.addToStore(relationshipModel);
+                            model[relationshipName] = relationshipModel;
+                            return relationshipModel;
+                        }).subscribe();
                     }
                 });
             });
@@ -47,7 +49,7 @@ var Http2AdapterService = /** @class */ (function () {
         });
         // TODO: .catch((res: any) => this.handleError(res));
     };
-    Http2AdapterService.prototype.generateModels = function (body, modelsData, modelType) {
+    Http2AdapterService.prototype.generateModels = function (modelsData, modelType) {
         var _this = this;
         return modelsData.map(function (modelData) { return _this.generateModel(modelData, modelType); });
     };

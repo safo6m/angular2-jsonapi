@@ -49,4 +49,5 @@ export declare class JsonApiDatastore extends Http2AdapterService {
     protected transformSerializedNamesToPropertyNames<T extends JsonApiModel>(modelType: ModelType<T>, attributes: any): any;
     protected getModelPropertyNames(model: JsonApiModel): any;
     protected generateModel<T extends JsonApiModel>(modelData: any, modelType: ModelType<T>): T;
+    protected getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
 }
