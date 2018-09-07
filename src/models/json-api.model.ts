@@ -7,6 +7,7 @@ import * as _ from 'lodash';
 import { AttributeMetadata } from '../constants/symbols';
 
 export class JsonApiModel {
+  data: any;
   id: string;
   [key: string]: any;
 
@@ -14,6 +15,8 @@ export class JsonApiModel {
 
   // tslint:disable-next-line:variable-name
   constructor(private _datastore: JsonApiDatastore, data?: any) {
+    this.data = data;
+
     if (data) {
       this.id = data.id;
       Object.assign(this, data.attributes);

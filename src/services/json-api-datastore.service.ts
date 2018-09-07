@@ -464,7 +464,7 @@ export class JsonApiDatastore extends Http2AdapterService {
   ): T {
     const deserializedModel = this.deserializeModel(modelType, modelData);
 
-    this.addToStore(deserializedModel);
+    // this.addToStore(deserializedModel);
 
     // if (body.included) {
     //   deserializedModel.syncRelationships(body.data, body.included);

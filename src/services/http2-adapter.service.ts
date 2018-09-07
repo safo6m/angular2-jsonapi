@@ -24,6 +24,9 @@ export abstract class Http2AdapterService {
     // TODO: X-Push-Related: parent relationships from filteredRelationshipNames
     // ie. [profileNames.info, consumer.nesto] ===> profileNames,consumer
 
+    const topXPushRelated = filteredRelationshipNames.map((relationshipName) => relationshipName.split('.')[0]);
+    options.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
+
     return this.http.get(options.requestUrl, { headers: options.requestHeaders })
       .map((response: any) => {
         const models = this.generateModels(response, response.data, options.modelType);
@@ -33,9 +36,11 @@ export abstract class Http2AdapterService {
         const models: Array<T> = queryData.getModels();
         models.forEach((model: T) => {
           this.addToStore(model);
-        });
 
-        debugger
+          topXPushRelated.forEach((relationshipName: string) => {
+            debugger;
+          });
+        });
 
         return queryData;
       });
@@ -55,48 +60,48 @@ export abstract class Http2AdapterService {
     });
   }
 
-  private handleQueryRelationships<T extends JsonApiModel>(
-    body: any,
-    modelType: ModelType<T>,
-    withMeta = false,
-    relationshipNames: Array<string> = [],
-    requestHeaders: HttpHeaders
-  ) {
-    const models: Array<T> = [];
+  // private handleQueryRelationships<T extends JsonApiModel>(
+  //   body: any,
+  //   modelType: ModelType<T>,
+  //   withMeta = false,
+  //   relationshipNames: Array<string> = [],
+  //   requestHeaders: HttpHeaders
+  // ) {
+  //   const models: Array<T> = [];
 
-    this.generateModels(body.data, modelType).forEach((model: T) => {
-      relationshipNames.forEach((relationshipName: string) => {
-        const relationShipParts = relationshipName.split('.');
-        const parentRelationshipName = relationShipParts[0];
+  //   this.generateModels(body.data, modelType).forEach((model: T) => {
+  //     relationshipNames.forEach((relationshipName: string) => {
+  //       const relationShipParts = relationshipName.split('.');
+  //       const parentRelationshipName = relationShipParts[0];
 
-        if (data.relationships &&
-          data.relationships[parentRelationshipName] &&
-          data.relationships[parentRelationshipName].links &&
-          data.relationships[parentRelationshipName].links.related
-        ) {
-          const relationshipUrl = data.relationships[parentRelationshipName].links.related;
-          const deepRelationshipName: Array<string> = relationShipParts.splice(1);
+  //       if (data.relationships &&
+  //         data.relationships[parentRelationshipName] &&
+  //         data.relationships[parentRelationshipName].links &&
+  //         data.relationships[parentRelationshipName].links.related
+  //       ) {
+  //         const relationshipUrl = data.relationships[parentRelationshipName].links.related;
+  //         const deepRelationshipName: Array<string> = relationShipParts.splice(1);
 
-          this.http
-              .get(relationshipUrl, { headers: requestHeaders })
-              .map((res: any) => this.fetchRelationships(res, modelType, false, deepRelationshipName))
-              // TODO: .catch((res: any) => this.handleError(res))
-              .subscribe();
-        }
+  //         this.http
+  //             .get(relationshipUrl, { headers: requestHeaders })
+  //             .map((res: any) => this.fetchRelationships(res, modelType, false, deepRelationshipName))
+  //             // TODO: .catch((res: any) => this.handleError(res))
+  //             .subscribe();
+  //       }
 
-        // Make a reqest
-        // Napravi model iz responsea
-        // Zalijepi response na "model"
-        // idi dublje i radi isto
-      });
-    });
+  //       // Make a reqest
+  //       // Napravi model iz responsea
+  //       // Zalijepi response na "model"
+  //       // idi dublje i radi isto
+  //     });
+  //   });
 
-    if (withMeta && withMeta === true) {
-      return new JsonApiQueryData(models, this.parseMeta(body, modelType));
-    }
+  //   if (withMeta && withMeta === true) {
+  //     return new JsonApiQueryData(models, this.parseMeta(body, modelType));
+  //   }
 
-    return models;
-  }
+  //   return models;
+  // }
 
   private fetchRelationships<T extends JsonApiModel>(
     originalModel: T,
