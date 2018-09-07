@@ -372,7 +372,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
     };
     JsonApiDatastore.prototype.generateModel = function (modelData, modelType) {
         var deserializedModel = this.deserializeModel(modelType, modelData);
-        this.addToStore(deserializedModel);
+        // this.addToStore(deserializedModel);
         // if (body.included) {
         //   deserializedModel.syncRelationships(body.data, body.included);
         //   this.addToStore(deserializedModel);

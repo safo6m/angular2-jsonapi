@@ -13,6 +13,8 @@ var Http2AdapterService = /** @class */ (function () {
         var filteredRelationshipNames = this.filterUnecessaryIncludes(relationshipNames);
         // TODO: X-Push-Related: parent relationships from filteredRelationshipNames
         // ie. [profileNames.info, consumer.nesto] ===> profileNames,consumer
+        var topXPushRelated = filteredRelationshipNames.map(function (relationshipName) { return relationshipName.split('.')[0]; });
+        options.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
         return this.http.get(options.requestUrl, { headers: options.requestHeaders })
             .map(function (response) {
             var models = _this.generateModels(response, response.data, options.modelType);
@@ -22,8 +24,10 @@ var Http2AdapterService = /** @class */ (function () {
             var models = queryData.getModels();
             models.forEach(function (model) {
                 _this.addToStore(model);
+                topXPushRelated.forEach(function (relationshipName) {
+                    debugger;
+                });
             });
-            debugger;
             return queryData;
         });
         // TODO: .catch((res: any) => this.handleError(res));

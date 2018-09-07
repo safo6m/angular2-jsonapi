@@ -8,6 +8,7 @@ var JsonApiModel = /** @class */ (function () {
     // tslint:disable-next-line:variable-name
     function JsonApiModel(_datastore, data) {
         this._datastore = _datastore;
+        this.data = data;
         if (data) {
             this.id = data.id;
             Object.assign(this, data.attributes);

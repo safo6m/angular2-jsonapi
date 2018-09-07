@@ -3,6 +3,7 @@ import { JsonApiDatastore } from '../services/json-api-datastore.service';
 import { ModelConfig } from '../interfaces/model-config.interface';
 export declare class JsonApiModel {
     private _datastore;
+    data: any;
     id: string;
     [key: string]: any;
     lastSyncModels: Array<any>;
