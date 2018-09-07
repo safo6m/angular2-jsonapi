@@ -24,8 +24,23 @@ var Http2AdapterService = /** @class */ (function () {
             var models = queryData.getModels();
             models.forEach(function (model) {
                 _this.addToStore(model);
-                topXPushRelated.forEach(function (relationshipName) {
-                    debugger;
+                filteredRelationshipNames.forEach(function (complexRelationshipName) {
+                    var relationshipName = complexRelationshipName.split('.')[0];
+                    var deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
+                    if (model.data.relationships &&
+                        model.data.relationships[relationshipName] &&
+                        model.data.relationships[relationshipName].links &&
+                        model.data.relationships[relationshipName].links.related) {
+                        var relationshipUrl = model.data.relationships[relationshipName].links.related;
+                        var topXPushRelated_1 = deeperRelationshipNames.map(function (relationshipName) { return relationshipName.split('.')[0]; });
+                        options.requestHeaders.set('X-Push-Related', topXPushRelated_1.join(','));
+                        _this.http.get(relationshipUrl, { headers: options.requestHeaders })
+                            .map(function (response) {
+                            debugger;
+                            // const models = this.generateModels(response, response.data, options.modelType);
+                            // return new JsonApiQueryData(models, this.parseMeta(response, options.modelType));
+                        });
+                    }
                 });
             });
             return queryData;
