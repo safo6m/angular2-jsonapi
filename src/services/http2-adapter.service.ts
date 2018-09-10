@@ -3,6 +3,7 @@ import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
 import { Observable } from 'rxjs/Observable';
+import { removeDuplicates } from '../helpers/remove-duplicates.helper';
 
 export interface FindAllOptions<T extends JsonApiModel> {
   includes: string;
@@ -11,53 +12,59 @@ export interface FindAllOptions<T extends JsonApiModel> {
   requestUrl: string;
 }
 
+interface Http2RequestOptions<T extends JsonApiModel> {
+  requestUrl: string;
+  requestHeaders: HttpHeaders;
+  relationshipNames: Array<string>;
+  parentModel?: T;
+  parentRelationshipName?: string;
+  modelType?: ModelType<T>; // modelType must be present for the initial call
+}
+
 export abstract class Http2AdapterService {
   constructor(protected http: HttpClient) {}
 
-  public findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T> | T> {
+  public findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>> {
     const relationshipNames = options.includes
                                      .split(',')
                                      .filter((relationshipName: string) => relationshipName);
 
     const filteredRelationshipNames = this.filterUnecessaryIncludes(relationshipNames);
 
-    return this.makeHttp2Request(
-      options.requestUrl,
-      options.requestHeaders,
-      filteredRelationshipNames
-    );
+    return this.makeHttp2Request({
+      requestUrl: options.requestUrl,
+      requestHeaders: options.requestHeaders,
+      relationshipNames: filteredRelationshipNames,
+      modelType: options.modelType
+    }) as Observable<JsonApiQueryData<T>>;
     // TODO: .catch((res: any) => this.handleError(res));
   }
 
   private makeHttp2Request<T extends JsonApiModel>(
-    requestUrl: string,
-    requestHeaders: HttpHeaders,
-    relationshipNames: Array<string>,
-    parentModel?: T,
-    parentRelationshipName?: string
-  ) {
-    const topXPushRelated = relationshipNames.map((relationshipName: string) => relationshipName.split('.')[0]);
-    // TODO: removeDuplicates from topXPushRelated
-    requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
+    requestOptions: Http2RequestOptions<T>
+  ): Observable<JsonApiQueryData<T> | Array<T> | T> {
+    let topXPushRelated = requestOptions.relationshipNames.map((relationshipName: string) => {
+      return relationshipName.split('.')[0];
+    });
+    topXPushRelated = removeDuplicates(topXPushRelated);
+    requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    return this.http.get(requestUrl, { headers: requestHeaders })
+    return this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
       .map((response: any) => {
-        if (this.isMultipleModelsFetched(response.data)) {
-          // This can happen if there is no items in data
-          // const modelType = response.data[0] ? this.getModelClassFromType(response.data[0].type) : null;
-          const modelType = this.getModelClassFromType(response.data[0].type);
-
-
+        if (this.isMultipleModelsFetched(response)) {
+          // tslint:disable-next-line:max-line-length
+          const modelType = requestOptions.modelType || (response.data[0] ? this.getModelClassFromType(response.data[0].type) : null);
           const models = modelType ? this.generateModels(response.data, modelType) : [];
-          return new JsonApiQueryData(models, this.parseMeta(response, modelType));
+          // tslint:disable-next-line:max-line-length
+          return requestOptions.modelType ? new JsonApiQueryData(models, this.parseMeta(response, requestOptions.modelType)) : models;
         } else {
           const modelType = this.getModelClassFromType(response.data.type);
           const relationshipModel = this.generateModel(response.data, modelType);
 
           this.addToStore(relationshipModel);
 
-          if (parentModel && parentRelationshipName) {
-            parentModel[parentRelationshipName] = relationshipModel;
+          if (requestOptions.parentModel && requestOptions.parentRelationshipName) {
+            requestOptions.parentModel[requestOptions.parentRelationshipName] = relationshipModel;
           }
 
           return relationshipModel;
@@ -68,10 +75,10 @@ export abstract class Http2AdapterService {
           const models: Array<T> = queryData.getModels();
           models.forEach((model: T) => {
             this.addToStore(model);
-            this.handleIncludedRelationships(relationshipNames, model, requestHeaders);
+            this.handleIncludedRelationships(requestOptions.relationshipNames, model, requestOptions.requestHeaders);
           });
         } else {
-          this.handleIncludedRelationships(relationshipNames, queryData, requestHeaders);
+          this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, requestOptions.requestHeaders);
         }
 
         return queryData;
@@ -95,13 +102,13 @@ export abstract class Http2AdapterService {
       ) {
         const relationshipUrl = model.data.relationships[relationshipName].links.related;
 
-        this.makeHttp2Request(
-          relationshipUrl,
+        this.makeHttp2Request({
           requestHeaders,
-          deeperRelationshipNames,
-          model,
-          relationshipName
-        );
+          requestUrl: relationshipUrl,
+          relationshipNames: deeperRelationshipNames,
+          parentModel: model,
+          parentRelationshipName: relationshipName
+        }).subscribe();
       }
     });
   }
