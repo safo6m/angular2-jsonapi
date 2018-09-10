@@ -12,7 +12,7 @@ export interface FindAllOptions<T extends JsonApiModel> {
 export declare abstract class Http2AdapterService {
     protected http: HttpClient;
     constructor(http: HttpClient);
-    findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T> | T>;
+    findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>>;
     private makeHttp2Request<T>(requestUrl, requestHeaders, relationshipNames, parentModel?, parentRelationshipName?);
     private handleIncludedRelationships<T>(relationshipNames, model, requestHeaders);
     private generateModels<T>(modelsData, modelType);
