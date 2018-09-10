@@ -381,7 +381,6 @@ var JsonApiDatastore = /** @class */ (function (_super) {
     };
     JsonApiDatastore.prototype.getModelClassFromType = function (modelType) {
         var modelsTypes = Reflect.getMetadata('JsonApiDatastoreConfig', this.constructor).models;
-        debugger;
         return modelsTypes[modelType];
     };
     JsonApiDatastore.decorators = [

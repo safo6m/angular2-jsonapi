@@ -12,10 +12,12 @@ export interface FindAllOptions<T extends JsonApiModel> {
 export declare abstract class Http2AdapterService {
     protected http: HttpClient;
     constructor(http: HttpClient);
-    findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>>;
+    findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T> | T>;
+    private makeHttp2Request<T>(requestUrl, requestHeaders, relationshipNames, parentModel?, parentRelationshipName?);
+    private handleIncludedRelationships<T>(relationshipNames, model, requestHeaders);
     private generateModels<T>(modelsData, modelType);
     private filterUnecessaryIncludes(includes);
-    private fetchRelationships<T>(originalModel, body, modelType, withMeta?, relationshipNames?);
+    private isMultipleModelsFetched(response);
     protected abstract generateModel<T extends JsonApiModel>(modelData: any, modelType: ModelType<T>): T;
     protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
     abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
