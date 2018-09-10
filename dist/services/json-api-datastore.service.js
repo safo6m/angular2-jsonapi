@@ -381,7 +381,11 @@ var JsonApiDatastore = /** @class */ (function (_super) {
     };
     JsonApiDatastore.prototype.getModelClassFromType = function (modelType) {
         var modelsTypes = Reflect.getMetadata('JsonApiDatastoreConfig', this.constructor).models;
-        return modelsTypes[modelType];
+        var modelTypeClass = modelsTypes[modelType];
+        if (!modelTypeClass) {
+            throw new Error("Missing model definition in datastore: " + modelType);
+        }
+        return modelTypeClass;
     };
     JsonApiDatastore.decorators = [
         { type: core_1.Injectable },
