@@ -1,12 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var json_api_query_data_1 = require("./../models/json-api-query-data");
+var rxjs_1 = require("rxjs");
 var remove_duplicates_helper_1 = require("../helpers/remove-duplicates.helper");
+var Subject_1 = require("rxjs/Subject");
 var Http2AdapterService = /** @class */ (function () {
     function Http2AdapterService(http) {
         this.http = http;
     }
     Http2AdapterService.prototype.findAll2 = function (options) {
+        var _this = this;
         var relationshipNames = options.includes
             .split(',')
             .filter(function (relationshipName) { return relationshipName; });
@@ -16,17 +19,19 @@ var Http2AdapterService = /** @class */ (function () {
             requestHeaders: options.requestHeaders,
             relationshipNames: filteredRelationshipNames,
             modelType: options.modelType
-        });
-        // TODO: .catch((res: any) => this.handleError(res));
+        })
+            .catch(function (res) { return _this.handleError(res); });
     };
     Http2AdapterService.prototype.makeHttp2Request = function (requestOptions) {
         var _this = this;
+        var results = new Subject_1.Subject();
+        var requests$ = [];
         var topXPushRelated = requestOptions.relationshipNames.map(function (relationshipName) {
             return relationshipName.split('.')[0];
         });
         topXPushRelated = remove_duplicates_helper_1.removeDuplicates(topXPushRelated);
         requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
-        return this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
+        var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
             .map(function (response) {
             if (_this.isMultipleModelsFetched(response)) {
                 // tslint:disable-next-line:max-line-length
@@ -46,21 +51,29 @@ var Http2AdapterService = /** @class */ (function () {
             }
         })
             .map(function (queryData) {
-            if (queryData instanceof json_api_query_data_1.JsonApiQueryData) {
-                var models = queryData.getModels();
+            if (queryData instanceof json_api_query_data_1.JsonApiQueryData || Array.isArray(queryData)) {
+                var models = queryData instanceof json_api_query_data_1.JsonApiQueryData ? queryData.getModels() : queryData;
                 models.forEach(function (model) {
                     _this.addToStore(model);
-                    _this.handleIncludedRelationships(requestOptions.relationshipNames, model, requestOptions.requestHeaders);
+                    var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, model, requestOptions.requestHeaders);
+                    requests$.push(request$);
                 });
             }
             else {
-                _this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, requestOptions.requestHeaders);
+                var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, requestOptions.requestHeaders);
+                requests$.push(request$);
             }
             return queryData;
         });
+        rxjs_1.Observable.combineLatest([mainRequest$].concat(requests$)).subscribe(function (result) {
+            results.next(result);
+        });
+        return results;
     };
     Http2AdapterService.prototype.handleIncludedRelationships = function (relationshipNames, model, requestHeaders) {
         var _this = this;
+        var results = new Subject_1.Subject();
+        var requests$ = [];
         relationshipNames.forEach(function (complexRelationshipName) {
             var relationshipName = complexRelationshipName.split('.')[0];
             var deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
@@ -69,15 +82,21 @@ var Http2AdapterService = /** @class */ (function () {
                 model.data.relationships[relationshipName].links &&
                 model.data.relationships[relationshipName].links.related) {
                 var relationshipUrl = model.data.relationships[relationshipName].links.related;
-                _this.makeHttp2Request({
+                var request$ = _this.makeHttp2Request({
                     requestHeaders: requestHeaders,
                     requestUrl: relationshipUrl,
                     relationshipNames: deeperRelationshipNames,
                     parentModel: model,
                     parentRelationshipName: relationshipName
-                }).subscribe();
+                });
+                requests$.push(request$);
+                request$.subscribe();
             }
         });
+        rxjs_1.Observable.combineLatest(requests$).subscribe(function () {
+            results.next();
+        });
+        return results;
     };
     Http2AdapterService.prototype.generateModels = function (modelsData, modelType) {
         var _this = this;

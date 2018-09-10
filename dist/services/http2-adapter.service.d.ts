@@ -1,8 +1,9 @@
+import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 export interface FindAllOptions<T extends JsonApiModel> {
     includes: string;
     modelType: ModelType<T>;
@@ -22,4 +23,5 @@ export declare abstract class Http2AdapterService {
     protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
     abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
     protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
+    protected abstract handleError(error: any): ErrorObservable;
 }
