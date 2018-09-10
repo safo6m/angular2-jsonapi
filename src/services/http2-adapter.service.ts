@@ -1,9 +1,11 @@
+import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { removeDuplicates } from '../helpers/remove-duplicates.helper';
+import { Subject } from 'rxjs/Subject';
 
 export interface FindAllOptions<T extends JsonApiModel> {
   includes: string;
@@ -36,20 +38,23 @@ export abstract class Http2AdapterService {
       requestHeaders: options.requestHeaders,
       relationshipNames: filteredRelationshipNames,
       modelType: options.modelType
-    }) as Observable<JsonApiQueryData<T>>;
-    // TODO: .catch((res: any) => this.handleError(res));
+    })
+    .catch((res: any) => this.handleError(res)) as Observable<JsonApiQueryData<T>>;
   }
 
   private makeHttp2Request<T extends JsonApiModel>(
     requestOptions: Http2RequestOptions<T>
   ): Observable<JsonApiQueryData<T> | Array<T> | T> {
+    const results: Subject<JsonApiQueryData<T> | Array<T> | T> = new Subject<JsonApiQueryData<T> | Array<T> | T>();
+    const requests$: Array<Observable<any>> = [];
+
     let topXPushRelated = requestOptions.relationshipNames.map((relationshipName: string) => {
       return relationshipName.split('.')[0];
     });
     topXPushRelated = removeDuplicates(topXPushRelated);
     requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    return this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
+    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
       .map((response: any) => {
         if (this.isMultipleModelsFetched(response)) {
           // tslint:disable-next-line:max-line-length
@@ -70,26 +75,48 @@ export abstract class Http2AdapterService {
           return relationshipModel;
         }
       })
-      .map((queryData: JsonApiQueryData<T> | T) => {
-        if (queryData instanceof JsonApiQueryData) {
-          const models: Array<T> = queryData.getModels();
+      .map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
+        if (queryData instanceof JsonApiQueryData || Array.isArray(queryData)) {
+          const models: Array<T> = queryData instanceof JsonApiQueryData ? queryData.getModels() : queryData;
+
           models.forEach((model: T) => {
             this.addToStore(model);
-            this.handleIncludedRelationships(requestOptions.relationshipNames, model, requestOptions.requestHeaders);
+            const request$ = this.handleIncludedRelationships(
+              requestOptions.relationshipNames,
+              model,
+              requestOptions.requestHeaders
+            );
+
+            requests$.push(request$);
           });
         } else {
-          this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, requestOptions.requestHeaders);
+          const request$ = this.handleIncludedRelationships(
+            requestOptions.relationshipNames,
+            queryData,
+            requestOptions.requestHeaders
+          );
+
+          requests$.push(request$);
         }
 
         return queryData;
       });
+
+    Observable.combineLatest([mainRequest$, ...requests$]).subscribe((result: JsonApiQueryData<T> | Array<T> | T) => {
+      results.next(result);
+    });
+
+    return results;
   }
 
   private handleIncludedRelationships<T extends JsonApiModel>(
     relationshipNames: Array<string>,
     model: T,
     requestHeaders: HttpHeaders
-  ) {
+  ): Subject<any> {
+    const results: Subject<any> = new Subject<any>();
+    const requests$: Array<Observable<any>> = [];
+
     relationshipNames.forEach((complexRelationshipName: string) => {
       const relationshipName = complexRelationshipName.split('.')[0];
       const deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
@@ -102,15 +129,25 @@ export abstract class Http2AdapterService {
       ) {
         const relationshipUrl = model.data.relationships[relationshipName].links.related;
 
-        this.makeHttp2Request({
+        const request$ = this.makeHttp2Request({
           requestHeaders,
           requestUrl: relationshipUrl,
           relationshipNames: deeperRelationshipNames,
           parentModel: model,
           parentRelationshipName: relationshipName
-        }).subscribe();
+        });
+
+        requests$.push(request$);
+
+        request$.subscribe();
       }
     });
+
+    Observable.combineLatest(requests$).subscribe(() => {
+      results.next();
+    });
+
+    return results;
   }
 
   private generateModels<T extends JsonApiModel>(modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
@@ -138,4 +175,5 @@ export abstract class Http2AdapterService {
   protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
   public abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
   protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
+  protected abstract handleError(error: any): ErrorObservable;
 }
