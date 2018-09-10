@@ -476,7 +476,6 @@ export class JsonApiDatastore extends Http2AdapterService {
 
   protected getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T> {
     const modelsTypes: any = Reflect.getMetadata('JsonApiDatastoreConfig', this.constructor).models;
-    debugger;
     return modelsTypes[modelType];
   }
 }

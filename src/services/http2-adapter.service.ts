@@ -14,61 +14,96 @@ export interface FindAllOptions<T extends JsonApiModel> {
 export abstract class Http2AdapterService {
   constructor(protected http: HttpClient) {}
 
-  public findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>> {
+  public findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T> | T> {
     const relationshipNames = options.includes
                                      .split(',')
                                      .filter((relationshipName: string) => relationshipName);
 
     const filteredRelationshipNames = this.filterUnecessaryIncludes(relationshipNames);
 
-    // TODO: X-Push-Related: parent relationships from filteredRelationshipNames
-    // ie. [profileNames.info, consumer.nesto] ===> profileNames,consumer
+    return this.makeHttp2Request(
+      options.requestUrl,
+      options.requestHeaders,
+      filteredRelationshipNames
+    );
+    // TODO: .catch((res: any) => this.handleError(res));
+  }
 
-    const topXPushRelated = filteredRelationshipNames.map((relationshipName) => relationshipName.split('.')[0]);
-    options.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
+  private makeHttp2Request<T extends JsonApiModel>(
+    requestUrl: string,
+    requestHeaders: HttpHeaders,
+    relationshipNames: Array<string>,
+    parentModel?: T,
+    parentRelationshipName?: string
+  ) {
+    const topXPushRelated = relationshipNames.map((relationshipName: string) => relationshipName.split('.')[0]);
+    // TODO: removeDuplicates from topXPushRelated
+    requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    return this.http.get(options.requestUrl, { headers: options.requestHeaders })
+    return this.http.get(requestUrl, { headers: requestHeaders })
       .map((response: any) => {
-        const models = this.generateModels(response.data, options.modelType);
-        return new JsonApiQueryData(models, this.parseMeta(response, options.modelType));
+        if (this.isMultipleModelsFetched(response.data)) {
+          // This can happen if there is no items in data
+          // const modelType = response.data[0] ? this.getModelClassFromType(response.data[0].type) : null;
+          const modelType = this.getModelClassFromType(response.data[0].type);
+
+
+          const models = modelType ? this.generateModels(response.data, modelType) : [];
+          return new JsonApiQueryData(models, this.parseMeta(response, modelType));
+        } else {
+          const modelType = this.getModelClassFromType(response.data.type);
+          const relationshipModel = this.generateModel(response.data, modelType);
+
+          this.addToStore(relationshipModel);
+
+          if (parentModel && parentRelationshipName) {
+            parentModel[parentRelationshipName] = relationshipModel;
+          }
+
+          return relationshipModel;
+        }
       })
-      .map((queryData: JsonApiQueryData<T>) => {
-        const models: Array<T> = queryData.getModels();
-        models.forEach((model: T) => {
-          this.addToStore(model);
-
-          filteredRelationshipNames.forEach((complexRelationshipName: string) => {
-            const relationshipName = complexRelationshipName.split('.')[0];
-            const deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
-
-            if (
-              model.data.relationships &&
-              model.data.relationships[relationshipName] &&
-              model.data.relationships[relationshipName].links &&
-              model.data.relationships[relationshipName].links.related
-            ) {
-              const relationshipUrl = model.data.relationships[relationshipName].links.related;
-
-              const topXPushRelated = deeperRelationshipNames.map((relationshipName) => relationshipName.split('.')[0]);
-              options.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
-
-              this.http.get(relationshipUrl, { headers: options.requestHeaders })
-                .map((response: any) => {
-                  const modelType = this.getModelClassFromType(response.data.type);
-                  const relationshipModel = this.generateModel(response.data, modelType);
-
-                  this.addToStore(relationshipModel);
-                  model[relationshipName] = relationshipModel;
-
-                  return relationshipModel;
-                }).subscribe();
-            }
+      .map((queryData: JsonApiQueryData<T> | T) => {
+        if (queryData instanceof JsonApiQueryData) {
+          const models: Array<T> = queryData.getModels();
+          models.forEach((model: T) => {
+            this.addToStore(model);
+            this.handleIncludedRelationships(relationshipNames, model, requestHeaders);
           });
-        });
+        } else {
+          this.handleIncludedRelationships(relationshipNames, queryData, requestHeaders);
+        }
 
         return queryData;
       });
-      // TODO: .catch((res: any) => this.handleError(res));
+  }
+
+  private handleIncludedRelationships<T extends JsonApiModel>(
+    relationshipNames: Array<string>,
+    model: T,
+    requestHeaders: HttpHeaders
+  ) {
+    relationshipNames.forEach((complexRelationshipName: string) => {
+      const relationshipName = complexRelationshipName.split('.')[0];
+      const deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
+
+      if (
+        model.data.relationships &&
+        model.data.relationships[relationshipName] &&
+        model.data.relationships[relationshipName].links &&
+        model.data.relationships[relationshipName].links.related
+      ) {
+        const relationshipUrl = model.data.relationships[relationshipName].links.related;
+
+        this.makeHttp2Request(
+          relationshipUrl,
+          requestHeaders,
+          deeperRelationshipNames,
+          model,
+          relationshipName
+        );
+      }
+    });
   }
 
   private generateModels<T extends JsonApiModel>(modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
@@ -84,57 +119,8 @@ export abstract class Http2AdapterService {
     });
   }
 
-  // private handleQueryRelationships<T extends JsonApiModel>(
-  //   body: any,
-  //   modelType: ModelType<T>,
-  //   withMeta = false,
-  //   relationshipNames: Array<string> = [],
-  //   requestHeaders: HttpHeaders
-  // ) {
-  //   const models: Array<T> = [];
-
-  //   this.generateModels(body.data, modelType).forEach((model: T) => {
-  //     relationshipNames.forEach((relationshipName: string) => {
-  //       const relationShipParts = relationshipName.split('.');
-  //       const parentRelationshipName = relationShipParts[0];
-
-  //       if (data.relationships &&
-  //         data.relationships[parentRelationshipName] &&
-  //         data.relationships[parentRelationshipName].links &&
-  //         data.relationships[parentRelationshipName].links.related
-  //       ) {
-  //         const relationshipUrl = data.relationships[parentRelationshipName].links.related;
-  //         const deepRelationshipName: Array<string> = relationShipParts.splice(1);
-
-  //         this.http
-  //             .get(relationshipUrl, { headers: requestHeaders })
-  //             .map((res: any) => this.fetchRelationships(res, modelType, false, deepRelationshipName))
-  //             // TODO: .catch((res: any) => this.handleError(res))
-  //             .subscribe();
-  //       }
-
-  //       // Make a reqest
-  //       // Napravi model iz responsea
-  //       // Zalijepi response na "model"
-  //       // idi dublje i radi isto
-  //     });
-  //   });
-
-  //   if (withMeta && withMeta === true) {
-  //     return new JsonApiQueryData(models, this.parseMeta(body, modelType));
-  //   }
-
-  //   return models;
-  // }
-
-  private fetchRelationships<T extends JsonApiModel>(
-    originalModel: T,
-    body: any,
-    modelType: ModelType<T>,
-    withMeta = false,
-    relationshipNames: Array<string> = []
-  ) {
-    debugger;
+  private isMultipleModelsFetched(response: any): boolean {
+    return Array.isArray(response.data);
   }
 
   protected abstract generateModel<T extends JsonApiModel>(
