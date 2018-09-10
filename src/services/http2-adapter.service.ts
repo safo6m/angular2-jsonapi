@@ -1,3 +1,4 @@
+import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
@@ -36,8 +37,8 @@ export abstract class Http2AdapterService {
       requestHeaders: options.requestHeaders,
       relationshipNames: filteredRelationshipNames,
       modelType: options.modelType
-    }) as Observable<JsonApiQueryData<T>>;
-    // TODO: .catch((res: any) => this.handleError(res));
+    })
+    .catch((res: any) => this.handleError(res)) as Observable<JsonApiQueryData<T>>;
   }
 
   private makeHttp2Request<T extends JsonApiModel>(
@@ -138,4 +139,5 @@ export abstract class Http2AdapterService {
   protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
   public abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
   protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
+  protected abstract handleError(error: any): ErrorObservable;
 }
