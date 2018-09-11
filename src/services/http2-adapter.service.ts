@@ -3,9 +3,8 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
-import { Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 import { removeDuplicates } from '../helpers/remove-duplicates.helper';
-import { Subject } from 'rxjs/Subject';
 
 export interface FindAllOptions<T extends JsonApiModel> {
   includes: string;
@@ -45,7 +44,9 @@ export abstract class Http2AdapterService {
   private makeHttp2Request<T extends JsonApiModel>(
     requestOptions: Http2RequestOptions<T>
   ): Observable<JsonApiQueryData<T> | Array<T> | T> {
-    const results: Subject<JsonApiQueryData<T> | Array<T> | T> = new Subject<JsonApiQueryData<T> | Array<T> | T>();
+    const results: ReplaySubject<JsonApiQueryData<T> | Array<T> | T> =
+      new ReplaySubject<JsonApiQueryData<T> | Array<T> | T>();
+
     const requests$: Array<Observable<any>> = [];
 
     let topXPushRelated = requestOptions.relationshipNames.map((relationshipName: string) => {
