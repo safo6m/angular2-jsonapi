@@ -10,9 +10,16 @@ export interface FindAllOptions<T extends JsonApiModel> {
     requestHeaders: HttpHeaders;
     requestUrl: string;
 }
+export interface FindRecordOptions<T extends JsonApiModel> {
+    includes: string;
+    modelType: ModelType<T>;
+    requestHeaders: HttpHeaders;
+    requestUrl: string;
+}
 export declare abstract class Http2AdapterService {
     protected http: HttpClient;
     constructor(http: HttpClient);
+    findRecord2<T extends JsonApiModel>(options: FindRecordOptions<T>): Observable<T>;
     findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>>;
     private makeHttp2Request<T>(requestOptions);
     private handleIncludedRelationships<T>(relationshipNames, model, requestHeaders);

@@ -6,6 +6,20 @@ var Http2AdapterService = /** @class */ (function () {
     function Http2AdapterService(http) {
         this.http = http;
     }
+    Http2AdapterService.prototype.findRecord2 = function (options) {
+        var _this = this;
+        var relationshipNames = options.includes
+            .split(',')
+            .filter(function (relationshipName) { return relationshipName; });
+        var filteredRelationshipNames = this.filterUnecessaryIncludes(relationshipNames);
+        return this.makeHttp2Request({
+            requestUrl: options.requestUrl,
+            requestHeaders: options.requestHeaders,
+            relationshipNames: filteredRelationshipNames,
+            modelType: options.modelType
+        })
+            .catch(function (res) { return _this.handleError(res); });
+    };
     Http2AdapterService.prototype.findAll2 = function (options) {
         var _this = this;
         var relationshipNames = options.includes
@@ -62,7 +76,6 @@ var Http2AdapterService = /** @class */ (function () {
     };
     Http2AdapterService.prototype.handleIncludedRelationships = function (relationshipNames, model, requestHeaders) {
         var _this = this;
-        var requests$ = [];
         relationshipNames.forEach(function (complexRelationshipName) {
             var relationshipName = complexRelationshipName.split('.')[0];
             var deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
@@ -78,7 +91,7 @@ var Http2AdapterService = /** @class */ (function () {
                     parentModel: model,
                     parentRelationshipName: relationshipName
                 });
-                requests$.push(request$);
+                request$.subscribe();
             }
         });
     };
