@@ -3,7 +3,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var json_api_query_data_1 = require("./../models/json-api-query-data");
 var rxjs_1 = require("rxjs");
 var remove_duplicates_helper_1 = require("../helpers/remove-duplicates.helper");
-var Subject_1 = require("rxjs/Subject");
 var Http2AdapterService = /** @class */ (function () {
     function Http2AdapterService(http) {
         this.http = http;
@@ -24,7 +23,7 @@ var Http2AdapterService = /** @class */ (function () {
     };
     Http2AdapterService.prototype.makeHttp2Request = function (requestOptions) {
         var _this = this;
-        var results = new Subject_1.Subject();
+        var results = new rxjs_1.ReplaySubject();
         var requests$ = [];
         var topXPushRelated = requestOptions.relationshipNames.map(function (relationshipName) {
             return relationshipName.split('.')[0];
