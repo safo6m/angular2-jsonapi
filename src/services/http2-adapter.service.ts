@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
-import { Observable } from 'rxjs';
+import { Observable, BehaviorSubject, ReplaySubject } from 'rxjs';
 import { removeDuplicates } from '../helpers/remove-duplicates.helper';
 import { Subject } from 'rxjs/Subject';
 
@@ -100,13 +100,15 @@ export abstract class Http2AdapterService {
         }
 
         return queryData;
-      }).do((queryData: JsonApiQueryData<T> | Array<T> | T) => {
+      }).map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
         Observable.combineLatest([mainRequest$, ...requests$]).subscribe(([result]) => {
           results.next(result);
         });
 
         return queryData;
-      });
+      }).share();
+
+    mainRequest$.subscribe();
 
     return results;
   }
@@ -115,8 +117,8 @@ export abstract class Http2AdapterService {
     relationshipNames: Array<string>,
     model: T,
     requestHeaders: HttpHeaders
-  ): Subject<any> {
-    const results: Subject<any> = new Subject<any>();
+  ): Observable<any> {
+    const results: ReplaySubject<any> = new ReplaySubject<any>();
     const requests$: Array<Observable<any>> = [];
 
     relationshipNames.forEach((complexRelationshipName: string) => {
@@ -140,13 +142,11 @@ export abstract class Http2AdapterService {
         });
 
         requests$.push(request$);
-
-        request$.subscribe();
       }
     });
 
     Observable.combineLatest(requests$).subscribe(() => {
-      results.next();
+      results.next(false);
     });
 
     return results;
