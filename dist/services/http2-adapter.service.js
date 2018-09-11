@@ -64,18 +64,19 @@ var Http2AdapterService = /** @class */ (function () {
                 requests$.push(request$);
             }
             return queryData;
-        }).do(function (queryData) {
+        }).map(function (queryData) {
             rxjs_1.Observable.combineLatest([mainRequest$].concat(requests$)).subscribe(function (_a) {
                 var result = _a[0];
                 results.next(result);
             });
             return queryData;
-        });
+        }).share();
+        mainRequest$.subscribe();
         return results;
     };
     Http2AdapterService.prototype.handleIncludedRelationships = function (relationshipNames, model, requestHeaders) {
         var _this = this;
-        var results = new Subject_1.Subject();
+        var results = new rxjs_1.ReplaySubject();
         var requests$ = [];
         relationshipNames.forEach(function (complexRelationshipName) {
             var relationshipName = complexRelationshipName.split('.')[0];
@@ -93,11 +94,10 @@ var Http2AdapterService = /** @class */ (function () {
                     parentRelationshipName: relationshipName
                 });
                 requests$.push(request$);
-                request$.subscribe();
             }
         });
         rxjs_1.Observable.combineLatest(requests$).subscribe(function () {
-            results.next();
+            results.next(false);
         });
         return results;
     };
