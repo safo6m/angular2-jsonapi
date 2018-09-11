@@ -126,12 +126,16 @@ export abstract class Http2AdapterService {
 
         return queryData;
       }).map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
-        Observable.combineLatest([mainRequest$, ...requests$]).subscribe(([result]) => {
-          results.next(result);
-        });
+        if (!requests$.length) {
+          results.next(queryData);
+        } else {
+          Observable.combineLatest(...requests$).subscribe(() => {
+            results.next(queryData);
+          });
+        }
 
         return queryData;
-      }).share();
+      });
 
     mainRequest$.subscribe();
 
@@ -170,9 +174,13 @@ export abstract class Http2AdapterService {
       }
     });
 
-    Observable.combineLatest(requests$).subscribe(() => {
+    if (!requests$.length) {
       results.next(false);
-    });
+    } else {
+      Observable.combineLatest(...requests$).subscribe(() => {
+        results.next(false);
+      });
+    }
 
     return results;
   }
