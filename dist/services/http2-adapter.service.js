@@ -78,11 +78,16 @@ var Http2AdapterService = /** @class */ (function () {
             }
             return queryData;
         }).map(function (queryData) {
-            rxjs_1.Observable.combineLatest(requests$).subscribe(function () {
+            if (!requests$.length) {
                 results.next(queryData);
-            });
+            }
+            else {
+                rxjs_1.Observable.combineLatest.apply(rxjs_1.Observable, requests$).subscribe(function () {
+                    results.next(queryData);
+                });
+            }
             return queryData;
-        }).share();
+        });
         mainRequest$.subscribe();
         return results;
     };
@@ -108,9 +113,14 @@ var Http2AdapterService = /** @class */ (function () {
                 requests$.push(request$);
             }
         });
-        rxjs_1.Observable.combineLatest(requests$).subscribe(function () {
+        if (!requests$.length) {
             results.next(false);
-        });
+        }
+        else {
+            rxjs_1.Observable.combineLatest.apply(rxjs_1.Observable, requests$).subscribe(function () {
+                results.next(false);
+            });
+        }
         return results;
     };
     Http2AdapterService.prototype.generateModels = function (modelsData, modelType) {
