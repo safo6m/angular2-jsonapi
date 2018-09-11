@@ -100,8 +100,6 @@ export abstract class Http2AdapterService {
     model: T,
     requestHeaders: HttpHeaders
   ): void {
-    const requests$: Array<Observable<any>> = [];
-
     relationshipNames.forEach((complexRelationshipName: string) => {
       const relationshipName = complexRelationshipName.split('.')[0];
       const deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
@@ -122,7 +120,7 @@ export abstract class Http2AdapterService {
           parentRelationshipName: relationshipName
         });
 
-        requests$.push(request$);
+        request$.subscribe();
       }
     });
   }
