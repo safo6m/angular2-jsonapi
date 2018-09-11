@@ -13,6 +13,14 @@ export interface FindAllOptions<T extends JsonApiModel> {
   requestUrl: string;
 }
 
+export interface FindRecordOptions<T extends JsonApiModel> {
+  includes: string;
+  modelType: ModelType<T>;
+  requestHeaders: HttpHeaders;
+  requestUrl: string;
+}
+
+
 interface Http2RequestOptions<T extends JsonApiModel> {
   requestUrl: string;
   requestHeaders: HttpHeaders;
@@ -24,6 +32,22 @@ interface Http2RequestOptions<T extends JsonApiModel> {
 
 export abstract class Http2AdapterService {
   constructor(protected http: HttpClient) {}
+
+  public findRecord2<T extends JsonApiModel>(options: FindRecordOptions<T>): Observable<T> {
+    const relationshipNames = options.includes
+                                     .split(',')
+                                     .filter((relationshipName: string) => relationshipName);
+
+    const filteredRelationshipNames = this.filterUnecessaryIncludes(relationshipNames);
+
+    return this.makeHttp2Request({
+      requestUrl: options.requestUrl,
+      requestHeaders: options.requestHeaders,
+      relationshipNames: filteredRelationshipNames,
+      modelType: options.modelType
+    })
+    .catch((res: any) => this.handleError(res)) as Observable<T>;
+  }
 
   public findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>> {
     const relationshipNames = options.includes
@@ -100,8 +124,6 @@ export abstract class Http2AdapterService {
     model: T,
     requestHeaders: HttpHeaders
   ): void {
-    const requests$: Array<Observable<any>> = [];
-
     relationshipNames.forEach((complexRelationshipName: string) => {
       const relationshipName = complexRelationshipName.split('.')[0];
       const deeperRelationshipNames = complexRelationshipName.split('.').splice(1);
@@ -122,7 +144,7 @@ export abstract class Http2AdapterService {
           parentRelationshipName: relationshipName
         });
 
-        requests$.push(request$);
+        request$.subscribe();
       }
     });
   }

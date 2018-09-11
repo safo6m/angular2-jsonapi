@@ -76,14 +76,27 @@ export class JsonApiDatastore extends Http2AdapterService {
     id: string,
     params?: any,
     headers?: Headers,
-    customUrl?: string
+    customUrl?: string,
+    http2: boolean = false
   ): Observable<T> {
     const requestHeaders: HttpHeaders = this.buildHeaders(headers);
     const url: string = this.buildUrl(modelType, params, id, customUrl);
 
-    return this.http.get(url, { headers: requestHeaders, observe: 'response' })
-      .map((res) => this.extractRecordData(res, modelType))
-      .catch((res: any) => this.handleError(res));
+    if (!http2) {
+      return this.http.get(url, { headers: requestHeaders, observe: 'response' })
+        .map((res) => this.extractRecordData(res, modelType))
+        .catch((res: any) => this.handleError(res));
+    } else {
+      const queryParams = params || {};
+      const includes: string = queryParams.include || '';
+
+      return super.findRecord2({
+        includes,
+        modelType,
+        requestHeaders,
+        requestUrl: url,
+      });
+    }
   }
 
   createRecord<T extends JsonApiModel>(modelType: ModelType<T>, data?: any): T {
