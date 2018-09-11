@@ -44,7 +44,7 @@ export abstract class Http2AdapterService {
   private makeHttp2Request<T extends JsonApiModel>(
     requestOptions: Http2RequestOptions<T>
   ): Observable<JsonApiQueryData<T> | Array<T> | T> {
-    const results: ReplaySubject<JsonApiQueryData<T> | Array<T> | T> =
+    const results: ReplaySubject<JsonApiQueryData<T> | Array<T> | T> = 
       new ReplaySubject<JsonApiQueryData<T> | Array<T> | T>();
 
     const requests$: Array<Observable<any>> = [];
@@ -102,8 +102,8 @@ export abstract class Http2AdapterService {
 
         return queryData;
       }).map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
-        Observable.combineLatest([mainRequest$, ...requests$]).subscribe(([result]) => {
-          results.next(result);
+        Observable.combineLatest(requests$).subscribe(() => {
+          results.next(queryData);
         });
 
         return queryData;
