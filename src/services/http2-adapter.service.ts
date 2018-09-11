@@ -3,7 +3,7 @@ import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
-import { Observable } from 'rxjs';
+import { Observable, ReplaySubject } from 'rxjs';
 import { removeDuplicates } from '../helpers/remove-duplicates.helper';
 
 export interface FindAllOptions<T extends JsonApiModel> {
@@ -68,13 +68,18 @@ export abstract class Http2AdapterService {
   private makeHttp2Request<T extends JsonApiModel>(
     requestOptions: Http2RequestOptions<T>
   ): Observable<JsonApiQueryData<T> | Array<T> | T> {
+    const results: ReplaySubject<JsonApiQueryData<T> | Array<T> | T> =
+      new ReplaySubject<JsonApiQueryData<T> | Array<T> | T>();
+
+    const requests$: Array<Observable<any>> = [];
+
     let topXPushRelated = requestOptions.relationshipNames.map((relationshipName: string) => {
       return relationshipName.split('.')[0];
     });
     topXPushRelated = removeDuplicates(topXPushRelated);
     requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    return this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
+    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
       .map((response: any) => {
         if (this.isMultipleModelsFetched(response)) {
           // tslint:disable-next-line:max-line-length
@@ -106,6 +111,8 @@ export abstract class Http2AdapterService {
               model,
               requestOptions.requestHeaders
             );
+
+            requests$.push(request$);
           });
         } else {
           const request$ = this.handleIncludedRelationships(
@@ -113,17 +120,30 @@ export abstract class Http2AdapterService {
             queryData,
             requestOptions.requestHeaders
           );
+
+          requests$.push(request$);
         }
 
         return queryData;
-      });
+      }).map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
+        Observable.combineLatest([mainRequest$, ...requests$]).subscribe(([result]) => {
+          results.next(result);
+        });
+
+        return queryData;
+      }).share();
+
+    mainRequest$.subscribe();
+
+    return results;
   }
 
   private handleIncludedRelationships<T extends JsonApiModel>(
     relationshipNames: Array<string>,
     model: T,
     requestHeaders: HttpHeaders
-  ): void {
+  ): Observable<any> {
+    const results: ReplaySubject<any> = new ReplaySubject<any>();
     const requests$: Array<Observable<any>> = [];
 
     relationshipNames.forEach((complexRelationshipName: string) => {
@@ -149,6 +169,12 @@ export abstract class Http2AdapterService {
         requests$.push(request$);
       }
     });
+
+    Observable.combineLatest(requests$).subscribe(() => {
+      results.next(false);
+    });
+
+    return results;
   }
 
   private generateModels<T extends JsonApiModel>(modelsData: Array<any>, modelType: ModelType<T>): Array<T> {
