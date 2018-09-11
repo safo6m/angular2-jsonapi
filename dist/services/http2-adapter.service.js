@@ -64,9 +64,12 @@ var Http2AdapterService = /** @class */ (function () {
                 requests$.push(request$);
             }
             return queryData;
-        });
-        rxjs_1.Observable.combineLatest([mainRequest$].concat(requests$)).subscribe(function (result) {
-            results.next(result);
+        }).do(function (queryData) {
+            rxjs_1.Observable.combineLatest([mainRequest$].concat(requests$)).subscribe(function (_a) {
+                var result = _a[0];
+                results.next(result);
+            });
+            return queryData;
         });
         return results;
     };
