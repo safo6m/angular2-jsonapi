@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var json_api_query_data_1 = require("./../models/json-api-query-data");
-var rxjs_1 = require("rxjs");
 var remove_duplicates_helper_1 = require("../helpers/remove-duplicates.helper");
 var Http2AdapterService = /** @class */ (function () {
     function Http2AdapterService(http) {
@@ -23,14 +22,12 @@ var Http2AdapterService = /** @class */ (function () {
     };
     Http2AdapterService.prototype.makeHttp2Request = function (requestOptions) {
         var _this = this;
-        var results = new rxjs_1.ReplaySubject();
-        var requests$ = [];
         var topXPushRelated = requestOptions.relationshipNames.map(function (relationshipName) {
             return relationshipName.split('.')[0];
         });
         topXPushRelated = remove_duplicates_helper_1.removeDuplicates(topXPushRelated);
         requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
-        var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
+        return this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
             .map(function (response) {
             if (_this.isMultipleModelsFetched(response)) {
                 // tslint:disable-next-line:max-line-length
@@ -55,27 +52,16 @@ var Http2AdapterService = /** @class */ (function () {
                 models.forEach(function (model) {
                     _this.addToStore(model);
                     var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, model, requestOptions.requestHeaders);
-                    requests$.push(request$);
                 });
             }
             else {
                 var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, requestOptions.requestHeaders);
-                requests$.push(request$);
             }
             return queryData;
-        }).map(function (queryData) {
-            rxjs_1.Observable.combineLatest([mainRequest$].concat(requests$)).subscribe(function (_a) {
-                var result = _a[0];
-                results.next(result);
-            });
-            return queryData;
-        }).share();
-        mainRequest$.subscribe();
-        return results;
+        });
     };
     Http2AdapterService.prototype.handleIncludedRelationships = function (relationshipNames, model, requestHeaders) {
         var _this = this;
-        var results = new rxjs_1.ReplaySubject();
         var requests$ = [];
         relationshipNames.forEach(function (complexRelationshipName) {
             var relationshipName = complexRelationshipName.split('.')[0];
@@ -95,10 +81,6 @@ var Http2AdapterService = /** @class */ (function () {
                 requests$.push(request$);
             }
         });
-        rxjs_1.Observable.combineLatest(requests$).subscribe(function () {
-            results.next(false);
-        });
-        return results;
     };
     Http2AdapterService.prototype.generateModels = function (modelsData, modelType) {
         var _this = this;
