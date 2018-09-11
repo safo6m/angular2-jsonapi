@@ -100,11 +100,13 @@ export abstract class Http2AdapterService {
         }
 
         return queryData;
-      });
+      }).do((queryData: JsonApiQueryData<T> | Array<T> | T) => {
+        Observable.combineLatest([mainRequest$, ...requests$]).subscribe(([result]) => {
+          results.next(result);
+        });
 
-    Observable.combineLatest([mainRequest$, ...requests$]).subscribe((result: JsonApiQueryData<T> | Array<T> | T) => {
-      results.next(result);
-    });
+        return queryData;
+      });
 
     return results;
   }
