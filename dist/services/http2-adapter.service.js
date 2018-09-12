@@ -43,8 +43,11 @@ var Http2AdapterService = /** @class */ (function () {
             return relationshipName.split('.')[0];
         });
         topXPushRelated = remove_duplicates_helper_1.removeDuplicates(topXPushRelated);
-        requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
-        var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
+        var headers = requestOptions.requestHeaders;
+        if (topXPushRelated.length) {
+            headers = headers.set('X-Push-Related', topXPushRelated.join(','));
+        }
+        var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: headers })
             .map(function (response) {
             if (_this.isMultipleModelsFetched(response)) {
                 // tslint:disable-next-line:max-line-length
@@ -68,12 +71,12 @@ var Http2AdapterService = /** @class */ (function () {
                 var models = queryData instanceof json_api_query_data_1.JsonApiQueryData ? queryData.getModels() : queryData;
                 models.forEach(function (model) {
                     _this.addToStore(model);
-                    var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, model, requestOptions.requestHeaders);
+                    var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, model, headers);
                     requests$.push(request$);
                 });
             }
             else {
-                var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, requestOptions.requestHeaders);
+                var request$ = _this.handleIncludedRelationships(requestOptions.relationshipNames, queryData, headers);
                 requests$.push(request$);
             }
             return queryData;
