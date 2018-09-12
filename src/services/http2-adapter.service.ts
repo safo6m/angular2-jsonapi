@@ -182,7 +182,7 @@ export abstract class Http2AdapterService {
         results.next(false);
       });
     }
-q
+
     return results;
   }
 
