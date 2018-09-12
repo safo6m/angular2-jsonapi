@@ -47,6 +47,9 @@ var Http2AdapterService = /** @class */ (function () {
         if (topXPushRelated.length) {
             headers = headers.set('X-Push-Related', topXPushRelated.join(','));
         }
+        else {
+            headers = headers.delete('X-Push-Related');
+        }
         var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: headers })
             .map(function (response) {
             if (_this.isMultipleModelsFetched(response)) {
