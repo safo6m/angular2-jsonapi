@@ -78,7 +78,11 @@ export abstract class Http2AdapterService {
     });
     topXPushRelated = removeDuplicates(topXPushRelated);
 
-    const headers = requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
+    let headers = requestOptions.requestHeaders;
+
+    if (topXPushRelated.length) {
+      headers = headers.set('X-Push-Related', topXPushRelated.join(','));
+    }
 
     const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers })
       .map((response: any) => {
