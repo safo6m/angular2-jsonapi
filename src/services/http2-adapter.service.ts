@@ -82,6 +82,8 @@ export abstract class Http2AdapterService {
 
     if (topXPushRelated.length) {
       headers = headers.set('X-Push-Related', topXPushRelated.join(','));
+    } else {
+      headers = headers.delete('X-Push-Related');
     }
 
     const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers })
