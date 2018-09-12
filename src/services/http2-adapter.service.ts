@@ -77,9 +77,10 @@ export abstract class Http2AdapterService {
       return relationshipName.split('.')[0];
     });
     topXPushRelated = removeDuplicates(topXPushRelated);
-    requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
+    const headers = requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
+
+    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers })
       .map((response: any) => {
         if (this.isMultipleModelsFetched(response)) {
           // tslint:disable-next-line:max-line-length
@@ -109,7 +110,7 @@ export abstract class Http2AdapterService {
             const request$ = this.handleIncludedRelationships(
               requestOptions.relationshipNames,
               model,
-              requestOptions.requestHeaders
+              headers
             );
 
             requests$.push(request$);
@@ -118,7 +119,7 @@ export abstract class Http2AdapterService {
           const request$ = this.handleIncludedRelationships(
             requestOptions.relationshipNames,
             queryData,
-            requestOptions.requestHeaders
+            headers
           );
 
           requests$.push(request$);
@@ -181,7 +182,7 @@ export abstract class Http2AdapterService {
         results.next(false);
       });
     }
-
+q
     return results;
   }
 
