@@ -12,8 +12,6 @@ var JsonApiModule = /** @class */ (function () {
                     exports: [http_1.HttpClientModule]
                 },] },
     ];
-    /** @nocollapse */
-    JsonApiModule.ctorParameters = function () { return []; };
     return JsonApiModule;
 }());
 exports.JsonApiModule = JsonApiModule;

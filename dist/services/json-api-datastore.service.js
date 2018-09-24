@@ -13,17 +13,22 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var core_1 = require("@angular/core");
 var http_1 = require("@angular/common/http");
 var find_1 = require("lodash-es/find");
-var Observable_1 = require("rxjs/Observable");
-require("rxjs/add/operator/map");
-require("rxjs/add/operator/catch");
-require("rxjs/add/observable/throw");
-require("rxjs/add/observable/of");
+var operators_1 = require("rxjs/operators");
+var rxjs_1 = require("rxjs");
 var json_api_model_1 = require("../models/json-api.model");
 var error_response_model_1 = require("../models/error-response.model");
 var json_api_query_data_1 = require("../models/json-api-query-data");
 var qs = require("qs");
 var symbols_1 = require("../constants/symbols");
 var http2_adapter_service_1 = require("./http2-adapter.service");
+/**
+ * HACK/FIXME:
+ * Type 'symbol' cannot be used as an index type.
+ * TypeScript 2.9.x
+ * See https://github.com/Microsoft/TypeScript/issues/24587.
+ */
+// tslint:disable-next-line:variable-name
+var AttributeMetadataIndex = symbols_1.AttributeMetadata;
 var JsonApiDatastore = /** @class */ (function (_super) {
     __extends(JsonApiDatastore, _super);
     function JsonApiDatastore(http) {
@@ -43,9 +48,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
                 && this.datastoreConfig.overrides.getDirtyAttributes) {
                 return this.datastoreConfig.overrides.getDirtyAttributes;
             }
-            else {
-                return JsonApiDatastore.getDirtyAttributes;
-            }
+            return JsonApiDatastore.getDirtyAttributes;
         },
         enumerable: true,
         configurable: true
@@ -57,8 +60,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         var url = this.buildUrl(modelType, params, undefined, customUrl);
         if (!http2) {
             return this.http.get(url, { headers: requestHeaders })
-                .map(function (res) { return _this.extractQueryData(res, modelType, true); })
-                .catch(function (res) { return _this.handleError(res); });
+                .pipe(operators_1.map(function (res) { return _this.extractQueryData(res, modelType, true); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
         }
         else {
             var queryParams = params || {};
@@ -78,8 +80,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         var url = this.buildUrl(modelType, params, id, customUrl);
         if (!http2) {
             return this.http.get(url, { headers: requestHeaders, observe: 'response' })
-                .map(function (res) { return _this.extractRecordData(res, modelType); })
-                .catch(function (res) { return _this.handleError(res); });
+                .pipe(operators_1.map(function (res) { return _this.extractRecordData(res, modelType); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
         }
         else {
             var queryParams = params || {};
@@ -132,21 +133,19 @@ var JsonApiDatastore = /** @class */ (function (_super) {
             httpCall = this.http.post(url, body, { headers: requestHeaders, observe: 'response' });
         }
         return httpCall
-            .map(function (res) { return [200, 201].indexOf(res.status) !== -1 ? _this.extractRecordData(res, modelType, model) : model; })
-            .catch(function (res) {
+            .pipe(operators_1.map(function (res) { return [200, 201].indexOf(res.status) !== -1 ? _this.extractRecordData(res, modelType, model) : model; }), operators_1.catchError(function (res) {
             if (res == null) {
-                return Observable_1.Observable.of(model);
+                return rxjs_1.of(model);
             }
             return _this.handleError(res);
-        })
-            .map(function (res) { return _this.resetMetadataAttributes(res, attributesMetadata, modelType); })
-            .map(function (res) { return _this.updateRelationships(res, relationships); });
+        }), operators_1.map(function (res) { return _this.resetMetadataAttributes(res, attributesMetadata, modelType); }), operators_1.map(function (res) { return _this.updateRelationships(res, relationships); }));
     };
     JsonApiDatastore.prototype.deleteRecord = function (modelType, id, headers, customUrl) {
         var _this = this;
         var requestHeaders = this.buildHeaders(headers);
         var url = this.buildUrl(modelType, null, id, customUrl);
-        return this.http.delete(url, { headers: requestHeaders }).catch(function (res) { return _this.handleError(res); });
+        return this.http.delete(url, { headers: requestHeaders })
+            .pipe(operators_1.catchError(function (res) { return _this.handleError(res); }));
     };
     JsonApiDatastore.prototype.peekRecord = function (modelType, id) {
         var type = Reflect.getMetadata('JsonApiModelConfig', modelType).type;
@@ -275,10 +274,10 @@ var JsonApiDatastore = /** @class */ (function (_super) {
             error.error.errors instanceof Array) {
             var errors = new error_response_model_1.ErrorResponse(error.error.errors);
             console.error(error, errors);
-            return Observable_1.Observable.throw(errors);
+            return rxjs_1.throwError(errors);
         }
         console.error(error);
-        return Observable_1.Observable.throw(error);
+        return rxjs_1.throwError(error);
     };
     JsonApiDatastore.prototype.parseMeta = function (body, modelType) {
         var metaModel = Reflect.getMetadata('JsonApiModelConfig', modelType).meta;
@@ -336,7 +335,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
                 }
             }
         }
-        res[symbols_1.AttributeMetadata] = attributesMetadata;
+        res[AttributeMetadataIndex] = attributesMetadata;
         return res;
     };
     JsonApiDatastore.prototype.updateRelationships = function (model, relationships) {
@@ -405,7 +404,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
     ];
     /** @nocollapse */
     JsonApiDatastore.ctorParameters = function () { return [
-        { type: http_1.HttpClient, },
+        { type: http_1.HttpClient }
     ]; };
     return JsonApiDatastore;
 }(http2_adapter_service_1.Http2AdapterService));

@@ -4,6 +4,14 @@ var find_1 = require("lodash-es/find");
 var includes_1 = require("lodash-es/includes");
 var _ = require("lodash");
 var symbols_1 = require("../constants/symbols");
+/**
+ * HACK/FIXME:
+ * Type 'symbol' cannot be used as an index type.
+ * TypeScript 2.9.x
+ * See https://github.com/Microsoft/TypeScript/issues/24587.
+ */
+// tslint:disable-next-line:variable-name
+var AttributeMetadataIndex = symbols_1.AttributeMetadata;
 var JsonApiModel = /** @class */ (function () {
     // tslint:disable-next-line:variable-name
     function JsonApiModel(_datastore, data) {
@@ -29,12 +37,12 @@ var JsonApiModel = /** @class */ (function () {
         this.lastSyncModels = included;
     };
     JsonApiModel.prototype.save = function (params, headers) {
-        var attributesMetadata = this[symbols_1.AttributeMetadata];
+        var attributesMetadata = this[AttributeMetadataIndex];
         return this._datastore.saveRecord(attributesMetadata, this, params, headers);
     };
     Object.defineProperty(JsonApiModel.prototype, "hasDirtyAttributes", {
         get: function () {
-            var attributesMetadata = this[symbols_1.AttributeMetadata];
+            var attributesMetadata = this[AttributeMetadataIndex];
             var hasDirtyAttributes = false;
             for (var propertyName in attributesMetadata) {
                 if (attributesMetadata.hasOwnProperty(propertyName)) {
@@ -51,7 +59,7 @@ var JsonApiModel = /** @class */ (function () {
         configurable: true
     });
     JsonApiModel.prototype.rollbackAttributes = function () {
-        var attributesMetadata = this[symbols_1.AttributeMetadata];
+        var attributesMetadata = this[AttributeMetadataIndex];
         var metadata;
         for (var propertyName in attributesMetadata) {
             if (attributesMetadata.hasOwnProperty(propertyName)) {
@@ -66,7 +74,7 @@ var JsonApiModel = /** @class */ (function () {
                 }
             }
         }
-        this[symbols_1.AttributeMetadata] = attributesMetadata;
+        this[AttributeMetadataIndex] = attributesMetadata;
     };
     Object.defineProperty(JsonApiModel.prototype, "modelConfig", {
         get: function () {

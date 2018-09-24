@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var json_api_query_data_1 = require("./../models/json-api-query-data");
 var rxjs_1 = require("rxjs");
+var operators_1 = require("rxjs/operators");
 var remove_duplicates_helper_1 = require("../helpers/remove-duplicates.helper");
 var Http2AdapterService = /** @class */ (function () {
     function Http2AdapterService(http) {
@@ -18,8 +19,7 @@ var Http2AdapterService = /** @class */ (function () {
             requestHeaders: options.requestHeaders,
             relationshipNames: filteredRelationshipNames,
             modelType: options.modelType
-        })
-            .catch(function (res) { return _this.handleError(res); });
+        }).pipe(operators_1.catchError(function (res) { return _this.handleError(res); }));
     };
     Http2AdapterService.prototype.findAll2 = function (options) {
         var _this = this;
@@ -33,7 +33,7 @@ var Http2AdapterService = /** @class */ (function () {
             relationshipNames: filteredRelationshipNames,
             modelType: options.modelType
         })
-            .catch(function (res) { return _this.handleError(res); });
+            .pipe(operators_1.catchError(function (res) { return _this.handleError(res); }));
     };
     Http2AdapterService.prototype.makeHttp2Request = function (requestOptions) {
         var _this = this;
@@ -50,8 +50,7 @@ var Http2AdapterService = /** @class */ (function () {
         else {
             headers = headers.delete('X-Push-Related');
         }
-        var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: headers })
-            .map(function (response) {
+        var mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: headers }).pipe(operators_1.map(function (response) {
             if (_this.isMultipleModelsFetched(response)) {
                 // tslint:disable-next-line:max-line-length
                 var modelType = requestOptions.modelType || (response.data[0] ? _this.getModelClassFromType(response.data[0].type) : null);
@@ -68,8 +67,7 @@ var Http2AdapterService = /** @class */ (function () {
                 }
                 return relationshipModel;
             }
-        })
-            .map(function (queryData) {
+        }), operators_1.map(function (queryData) {
             if (queryData instanceof json_api_query_data_1.JsonApiQueryData || Array.isArray(queryData)) {
                 var models = queryData instanceof json_api_query_data_1.JsonApiQueryData ? queryData.getModels() : queryData;
                 models.forEach(function (model) {
@@ -83,17 +81,17 @@ var Http2AdapterService = /** @class */ (function () {
                 requests$.push(request$);
             }
             return queryData;
-        }).map(function (queryData) {
+        }), operators_1.map(function (queryData) {
             if (!requests$.length) {
                 results.next(queryData);
             }
             else {
-                rxjs_1.Observable.combineLatest.apply(rxjs_1.Observable, requests$).subscribe(function () {
+                rxjs_1.combineLatest.apply(void 0, requests$).subscribe(function () {
                     results.next(queryData);
                 });
             }
             return queryData;
-        });
+        }));
         mainRequest$.subscribe();
         return results;
     };
@@ -123,7 +121,7 @@ var Http2AdapterService = /** @class */ (function () {
             results.next(false);
         }
         else {
-            rxjs_1.Observable.combineLatest.apply(rxjs_1.Observable, requests$).subscribe(function () {
+            rxjs_1.combineLatest.apply(void 0, requests$).subscribe(function () {
                 results.next(false);
             });
         }

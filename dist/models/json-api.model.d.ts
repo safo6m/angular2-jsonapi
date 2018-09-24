@@ -1,4 +1,4 @@
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { JsonApiDatastore } from '../services/json-api-datastore.service';
 import { ModelConfig } from '../interfaces/model-config.interface';
 export declare class JsonApiModel {
@@ -13,9 +13,9 @@ export declare class JsonApiModel {
     readonly hasDirtyAttributes: boolean;
     rollbackAttributes(): void;
     readonly modelConfig: ModelConfig;
-    private parseHasMany(data, included, remainingModels);
-    private parseBelongsTo(data, included, remainingModels);
-    private getHasManyRelationship<T>(modelType, data, included, typeName, remainingModels);
-    private getBelongsToRelationship<T>(modelType, data, included, typeName, remainingModels);
-    private createOrPeek<T>(modelType, data);
+    private parseHasMany;
+    private parseBelongsTo;
+    private getHasManyRelationship;
+    private getBelongsToRelationship;
+    private createOrPeek;
 }
