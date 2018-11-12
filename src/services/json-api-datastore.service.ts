@@ -95,7 +95,9 @@ export class JsonApiDatastore extends Http2AdapterService {
       return super.findRecord2({
         includes,
         modelType,
-        requestHeaders: headers || new HttpHeaders(),
+        requestOptions: {
+          headers: headers || new HttpHeaders()
+        },
         requestUrl: url,
       });
     }
