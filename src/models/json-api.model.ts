@@ -24,7 +24,7 @@ export class JsonApiModel {
 
   lastSyncModels: Array<any>;
 
-  constructor(private internalDatastore: JsonApiDatastore, private data?: any) {
+  constructor(private internalDatastore: JsonApiDatastore, public data?: any) {
     if (data) {
       this.modelInitialization = true;
       this.id = data.id;

@@ -1,10 +1,10 @@
-import { ErrorObservable } from 'rxjs/observable/ErrorObservable';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
-import { Observable, ReplaySubject } from 'rxjs';
+import { Observable, ReplaySubject, combineLatest } from 'rxjs';
 import { removeDuplicates } from '../helpers/remove-duplicates.helper';
+import { map, catchError } from 'rxjs/operators';
 
 export interface FindAllOptions<T extends JsonApiModel> {
   includes: string;
@@ -37,8 +37,9 @@ export abstract class Http2AdapterService {
       requestHeaders: options.requestHeaders,
       relationshipNames: filteredRelationshipNames,
       modelType: options.modelType
-    })
-    .catch((res: any) => this.handleError(res)) as Observable<JsonApiQueryData<T>>;
+    }).pipe(
+      catchError((res: any) => this.handleError(res))
+    );
   }
 
   private makeHttp2Request<T extends JsonApiModel>(
@@ -55,8 +56,8 @@ export abstract class Http2AdapterService {
     topXPushRelated = removeDuplicates(topXPushRelated);
     requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders })
-      .map((response: any) => {
+    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders }).pipe(
+      map((response: any) => {
         if (this.isMultipleModelsFetched(response)) {
           // tslint:disable-next-line:max-line-length
           const modelType = requestOptions.modelType || (response.data[0] ? this.getModelClassFromType(response.data[0].type) : null);
@@ -75,8 +76,8 @@ export abstract class Http2AdapterService {
 
           return relationshipModel;
         }
-      })
-      .map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
+      }),
+      map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
         if (queryData instanceof JsonApiQueryData || Array.isArray(queryData)) {
           const models: Array<T> = queryData instanceof JsonApiQueryData ? queryData.getModels() : queryData;
 
@@ -101,17 +102,19 @@ export abstract class Http2AdapterService {
         }
 
         return queryData;
-      }).map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
+      }),
+      map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
         if (!requests$.length) {
           results.next(queryData);
         } else {
-          Observable.combineLatest(...requests$).subscribe(() => {
+          combineLatest(...requests$).subscribe(() => {
             results.next(queryData);
           });
         }
 
         return queryData;
-      });
+      })
+    );
 
     mainRequest$.subscribe();
 
@@ -153,7 +156,7 @@ export abstract class Http2AdapterService {
     if (!requests$.length) {
       results.next(false);
     } else {
-      Observable.combineLatest(...requests$).subscribe(() => {
+      combineLatest(...requests$).subscribe(() => {
         results.next(false);
       });
     }
@@ -186,5 +189,5 @@ export abstract class Http2AdapterService {
   protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
   public abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
   protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
-  protected abstract handleError(error: any): ErrorObservable;
+  protected abstract handleError(error: any): Observable<any>;
 }
