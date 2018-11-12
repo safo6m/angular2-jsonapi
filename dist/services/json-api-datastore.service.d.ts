@@ -1,4 +1,4 @@
-import { HttpHeaders, HttpResponse } from '@angular/common/http';
+import { HttpHeaders, HttpResponse, HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { JsonApiModel } from '../models/json-api.model';
 import { JsonApiQueryData } from '../models/json-api-query-data';
@@ -8,12 +8,14 @@ export declare type ModelType<T extends JsonApiModel> = {
     new (datastore: JsonApiDatastore, data: any): T;
 };
 export declare class JsonApiDatastore extends Http2AdapterService {
+    protected http: HttpClient;
     private globalHeaders;
     private globalRequestOptions;
     private internalStore;
     private toQueryString;
     private readonly getDirtyAttributes;
     protected config: DatastoreConfig;
+    constructor(http: HttpClient);
     findAll<T extends JsonApiModel>(modelType: ModelType<T>, params?: any, headers?: HttpHeaders, customUrl?: string, http2?: boolean): Observable<JsonApiQueryData<T>>;
     findRecord<T extends JsonApiModel>(modelType: ModelType<T>, id: string, params?: any, headers?: HttpHeaders, customUrl?: string, http2?: boolean): Observable<T>;
     createRecord<T extends JsonApiModel>(modelType: ModelType<T>, data?: any): T;

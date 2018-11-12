@@ -31,8 +31,9 @@ var http2_adapter_service_1 = require("./http2-adapter.service");
 var AttributeMetadataIndex = symbols_1.AttributeMetadata;
 var JsonApiDatastore = /** @class */ (function (_super) {
     __extends(JsonApiDatastore, _super);
-    function JsonApiDatastore() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
+    function JsonApiDatastore(http) {
+        var _this = _super.call(this, http) || this;
+        _this.http = http;
         _this.globalRequestOptions = {};
         _this.internalStore = {};
         _this.toQueryString = _this.datastoreConfig.overrides
@@ -419,6 +420,10 @@ var JsonApiDatastore = /** @class */ (function (_super) {
     JsonApiDatastore.decorators = [
         { type: core_1.Injectable },
     ];
+    /** @nocollapse */
+    JsonApiDatastore.ctorParameters = function () { return [
+        { type: http_1.HttpClient }
+    ]; };
     return JsonApiDatastore;
 }(http2_adapter_service_1.Http2AdapterService));
 exports.JsonApiDatastore = JsonApiDatastore;
