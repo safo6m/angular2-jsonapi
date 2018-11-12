@@ -66,17 +66,32 @@ var JsonApiDatastore = /** @class */ (function (_super) {
             return _super.prototype.findAll2.call(this, {
                 includes: includes,
                 modelType: modelType,
-                requestHeaders: headers || new http_1.HttpHeaders(),
+                requestOptions: requestOptions,
                 requestUrl: url,
             });
         }
     };
-    JsonApiDatastore.prototype.findRecord = function (modelType, id, params, headers, customUrl) {
+    JsonApiDatastore.prototype.findRecord = function (modelType, id, params, headers, customUrl, http2) {
         var _this = this;
+        if (http2 === void 0) { http2 = false; }
         var requestOptions = this.buildRequestOptions({ headers: headers, observe: 'response' });
         var url = this.buildUrl(modelType, params, id, customUrl);
-        return this.http.get(url, requestOptions)
-            .pipe(operators_1.map(function (res) { return _this.extractRecordData(res, modelType); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
+        if (!http2) {
+            return this.http.get(url, requestOptions)
+                .pipe(operators_1.map(function (res) { return _this.extractRecordData(res, modelType); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
+        }
+        else {
+            var queryParams = params || {};
+            var includes = queryParams.include || '';
+            return _super.prototype.findRecord2.call(this, {
+                includes: includes,
+                modelType: modelType,
+                requestOptions: {
+                    headers: headers || new http_1.HttpHeaders()
+                },
+                requestUrl: url,
+            });
+        }
     };
     JsonApiDatastore.prototype.createRecord = function (modelType, data) {
         return new modelType(this, { attributes: data });

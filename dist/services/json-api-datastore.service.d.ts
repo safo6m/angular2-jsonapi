@@ -15,7 +15,7 @@ export declare class JsonApiDatastore extends Http2AdapterService {
     private readonly getDirtyAttributes;
     protected config: DatastoreConfig;
     findAll<T extends JsonApiModel>(modelType: ModelType<T>, params?: any, headers?: HttpHeaders, customUrl?: string, http2?: boolean): Observable<JsonApiQueryData<T>>;
-    findRecord<T extends JsonApiModel>(modelType: ModelType<T>, id: string, params?: any, headers?: HttpHeaders, customUrl?: string): Observable<T>;
+    findRecord<T extends JsonApiModel>(modelType: ModelType<T>, id: string, params?: any, headers?: HttpHeaders, customUrl?: string, http2?: boolean): Observable<T>;
     createRecord<T extends JsonApiModel>(modelType: ModelType<T>, data?: any): T;
     private static getDirtyAttributes;
     saveRecord<T extends JsonApiModel>(attributesMetadata: any, model: T, params?: any, headers?: HttpHeaders, customUrl?: string): Observable<T>;

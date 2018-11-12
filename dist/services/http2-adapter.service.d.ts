@@ -6,12 +6,23 @@ import { Observable } from 'rxjs';
 export interface FindAllOptions<T extends JsonApiModel> {
     includes: string;
     modelType: ModelType<T>;
-    requestHeaders: HttpHeaders;
+    requestOptions: RequestOptions;
     requestUrl: string;
+}
+export interface FindRecordOptions<T extends JsonApiModel> {
+    includes: string;
+    modelType: ModelType<T>;
+    requestOptions: RequestOptions;
+    requestUrl: string;
+}
+export interface RequestOptions {
+    headers: HttpHeaders;
+    [key: string]: object;
 }
 export declare abstract class Http2AdapterService {
     protected http: HttpClient;
     constructor(http: HttpClient);
+    findRecord2<T extends JsonApiModel>(options: FindRecordOptions<T>): Observable<T>;
     findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>>;
     private makeHttp2Request;
     private handleIncludedRelationships;
