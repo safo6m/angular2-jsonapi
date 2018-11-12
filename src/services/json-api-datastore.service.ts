@@ -10,7 +10,7 @@ import * as qs from 'qs';
 import { DatastoreConfig } from '../interfaces/datastore-config.interface';
 import { ModelConfig } from '../interfaces/model-config.interface';
 import { AttributeMetadata } from '../constants/symbols';
-import { Http2AdapterService, FindAllOptions } from './http2-adapter.service';
+import { Http2AdapterService, RequestOptions } from './http2-adapter.service';
 
 export type ModelType<T extends JsonApiModel> = { new(datastore: JsonApiDatastore, data: any): T; };
 
@@ -50,14 +50,14 @@ export class JsonApiDatastore extends Http2AdapterService {
     http2: boolean = false
   ): Observable<JsonApiQueryData<T>> {
     const url: string = this.buildUrl(modelType, params, undefined, customUrl);
-    const requestOptions: object = this.buildRequestOptions({ headers });
+    const requestOptions: RequestOptions = this.buildRequestOptions({ headers });
 
     if (!http2) {
       return this.http.get(url, requestOptions)
-      .pipe(
-        map((res: HttpResponse<object>) => this.extractQueryData(res, modelType, true)),
-        catchError((res: any) => this.handleError(res))
-      );
+        .pipe(
+          map((res: HttpResponse<object>) => this.extractQueryData(res, modelType, true)),
+          catchError((res: any) => this.handleError(res))
+        );
     } else {
       const queryParams = params || {};
       const includes: string = queryParams.include || '';
@@ -65,7 +65,7 @@ export class JsonApiDatastore extends Http2AdapterService {
       return super.findAll2({
         includes,
         modelType,
-        requestHeaders: headers || new HttpHeaders(),
+        requestOptions,
         requestUrl: url,
       });
     }
@@ -76,16 +76,29 @@ export class JsonApiDatastore extends Http2AdapterService {
     id: string,
     params?: any,
     headers?: HttpHeaders,
-    customUrl?: string
+    customUrl?: string,
+    http2: boolean = false
   ): Observable<T> {
     const requestOptions: object = this.buildRequestOptions({ headers, observe: 'response' });
     const url: string = this.buildUrl(modelType, params, id, customUrl);
 
-    return this.http.get(url, requestOptions)
-      .pipe(
-        map((res: HttpResponse<object>) => this.extractRecordData(res, modelType)),
-        catchError((res: any) => this.handleError(res))
-      );
+    if (!http2) {
+      return this.http.get(url, requestOptions)
+        .pipe(
+          map((res: HttpResponse<object>) => this.extractRecordData(res, modelType)),
+          catchError((res: any) => this.handleError(res))
+        );
+    } else {
+      const queryParams = params || {};
+      const includes: string = queryParams.include || '';
+
+      return super.findRecord2({
+        includes,
+        modelType,
+        requestHeaders: headers || new HttpHeaders(),
+        requestUrl: url,
+      });
+    }
   }
 
   public createRecord<T extends JsonApiModel>(modelType: ModelType<T>, data?: any): T {
@@ -383,10 +396,10 @@ export class JsonApiDatastore extends Http2AdapterService {
     return requestHeaders;
   }
 
-  private buildRequestOptions(customOptions: any = {}): object {
+  private buildRequestOptions(customOptions: any = {}): RequestOptions {
     const httpHeaders: HttpHeaders = this.buildHttpHeaders(customOptions.headers);
 
-    const requestOptions: object = Object.assign(customOptions, {
+    const requestOptions: RequestOptions = Object.assign(customOptions, {
       headers: httpHeaders
     });
 

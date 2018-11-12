@@ -3,19 +3,31 @@ import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
 import { Observable, ReplaySubject, combineLatest } from 'rxjs';
+import { catchError, map } from 'rxjs/operators';
 import { removeDuplicates } from '../helpers/remove-duplicates.helper';
-import { map, catchError } from 'rxjs/operators';
 
 export interface FindAllOptions<T extends JsonApiModel> {
   includes: string;
   modelType: ModelType<T>;
-  requestHeaders: HttpHeaders;
+  requestOptions: RequestOptions;
   requestUrl: string;
+}
+
+export interface FindRecordOptions<T extends JsonApiModel> {
+  includes: string;
+  modelType: ModelType<T>;
+  requestOptions: RequestOptions;
+  requestUrl: string;
+}
+
+export interface RequestOptions {
+  headers: HttpHeaders;
+  [key: string]: object;
 }
 
 interface Http2RequestOptions<T extends JsonApiModel> {
   requestUrl: string;
-  requestHeaders: HttpHeaders;
+  requestOptions: RequestOptions;
   relationshipNames: Array<string>;
   parentModel?: T;
   parentRelationshipName?: string;
@@ -24,6 +36,23 @@ interface Http2RequestOptions<T extends JsonApiModel> {
 
 export abstract class Http2AdapterService {
   constructor(protected http: HttpClient) {}
+
+  public findRecord2<T extends JsonApiModel>(options: FindRecordOptions<T>): Observable<T> {
+    const relationshipNames = options.includes
+                                     .split(',')
+                                     .filter((relationshipName: string) => relationshipName);
+
+    const filteredRelationshipNames = this.filterUnecessaryIncludes(relationshipNames);
+
+    return this.makeHttp2Request({
+      requestUrl: options.requestUrl,
+      requestOptions: options.requestOptions,
+      relationshipNames: filteredRelationshipNames,
+      modelType: options.modelType
+    }).pipe(
+      catchError((res: any) => this.handleError(res))
+    );
+  }
 
   public findAll2<T extends JsonApiModel>(options: FindAllOptions<T>): Observable<JsonApiQueryData<T>> {
     const relationshipNames = options.includes
@@ -34,7 +63,7 @@ export abstract class Http2AdapterService {
 
     return this.makeHttp2Request({
       requestUrl: options.requestUrl,
-      requestHeaders: options.requestHeaders,
+      requestOptions: options.requestOptions,
       relationshipNames: filteredRelationshipNames,
       modelType: options.modelType
     }).pipe(
@@ -54,9 +83,18 @@ export abstract class Http2AdapterService {
       return relationshipName.split('.')[0];
     });
     topXPushRelated = removeDuplicates(topXPushRelated);
-    requestOptions.requestHeaders.set('X-Push-Related', topXPushRelated.join(','));
 
-    const mainRequest$ = this.http.get(requestOptions.requestUrl, { headers: requestOptions.requestHeaders }).pipe(
+    let headers = requestOptions.requestOptions.headers;
+
+    if (topXPushRelated.length) {
+      headers = headers.set('X-Push-Related', topXPushRelated.join(','));
+    } else {
+      headers = headers.delete('X-Push-Related');
+    }
+
+    const httpRequestOptions: object = Object.assign({}, requestOptions.requestOptions, { headers });
+
+    const mainRequest$ = this.http.get(requestOptions.requestUrl, httpRequestOptions).pipe(
       map((response: any) => {
         if (this.isMultipleModelsFetched(response)) {
           // tslint:disable-next-line:max-line-length
@@ -86,7 +124,7 @@ export abstract class Http2AdapterService {
             const request$ = this.handleIncludedRelationships(
               requestOptions.relationshipNames,
               model,
-              requestOptions.requestHeaders
+              headers
             );
 
             requests$.push(request$);
@@ -95,7 +133,7 @@ export abstract class Http2AdapterService {
           const request$ = this.handleIncludedRelationships(
             requestOptions.relationshipNames,
             queryData,
-            requestOptions.requestHeaders
+            headers
           );
 
           requests$.push(request$);
@@ -141,8 +179,12 @@ export abstract class Http2AdapterService {
       ) {
         const relationshipUrl = model.data.relationships[relationshipName].links.related;
 
+        const requestOptions: RequestOptions = {
+          headers: requestHeaders
+        };
+
         const request$ = this.makeHttp2Request({
-          requestHeaders,
+          requestOptions,
           requestUrl: relationshipUrl,
           relationshipNames: deeperRelationshipNames,
           parentModel: model,
