@@ -1,14 +1,26 @@
 import find from 'lodash-es/find';
 import includes from 'lodash-es/includes';
-import { Observable } from 'rxjs/Observable';
+import { Observable } from 'rxjs';
 import { JsonApiDatastore, ModelType } from '../services/json-api-datastore.service';
 import { ModelConfig } from '../interfaces/model-config.interface';
 import * as _ from 'lodash';
 import { AttributeMetadata } from '../constants/symbols';
+import { HttpHeaders } from '@angular/common/http';
+
+/**
+ * HACK/FIXME:
+ * Type 'symbol' cannot be used as an index type.
+ * TypeScript 2.9.x
+ * See https://github.com/Microsoft/TypeScript/issues/24587.
+ */
+// tslint:disable-next-line:variable-name
+const AttributeMetadataIndex: string = AttributeMetadata as any;
 
 export class JsonApiModel {
   data: any;
   id: string;
+  public modelInitialization: boolean = false;
+
   [key: string]: any;
 
   lastSyncModels: Array<any>;
@@ -18,9 +30,15 @@ export class JsonApiModel {
     this.data = data;
 
     if (data) {
+      this.modelInitialization = true;
       this.id = data.id;
       Object.assign(this, data.attributes);
+      this.modelInitialization = false;
     }
+  }
+
+  isModelInitialization(): boolean {
+    return this.modelInitialization;
   }
 
   syncRelationships(data: any, included: any, remainingModels?: Array<any>): void {
@@ -42,18 +60,19 @@ export class JsonApiModel {
     this.lastSyncModels = included;
   }
 
-  save(params?: any, headers?: Headers): Observable<this> {
-    const attributesMetadata: any = this[AttributeMetadata];
-    return this._datastore.saveRecord(attributesMetadata, this, params, headers);
+  save(params?: any, headers?: HttpHeaders, customUrl?: string): Observable<this> {
+    this.checkChanges();
+    const attributesMetadata: any = this[AttributeMetadataIndex];
+    return this._datastore.saveRecord(attributesMetadata, this, params, headers, customUrl);
   }
 
   get hasDirtyAttributes() {
-    const attributesMetadata: any = this[AttributeMetadata];
+    this.checkChanges();
+    const attributesMetadata: any = this[AttributeMetadataIndex];
     let hasDirtyAttributes = false;
     for (const propertyName in attributesMetadata) {
       if (attributesMetadata.hasOwnProperty(propertyName)) {
         const metadata: any = attributesMetadata[propertyName];
-
         if (metadata.hasDirtyAttributes) {
           hasDirtyAttributes = true;
           break;
@@ -63,24 +82,35 @@ export class JsonApiModel {
     return hasDirtyAttributes;
   }
 
-  rollbackAttributes(): void {
+  private checkChanges() {
     const attributesMetadata: any = this[AttributeMetadata];
-    let metadata: any;
     for (const propertyName in attributesMetadata) {
       if (attributesMetadata.hasOwnProperty(propertyName)) {
-        if (attributesMetadata[propertyName].hasDirtyAttributes) {
-          this[propertyName] = attributesMetadata[propertyName].oldValue;
-          metadata = {
-            hasDirtyAttributes: false,
-            newValue: attributesMetadata[propertyName].oldValue,
-            oldValue: undefined
-          };
-          attributesMetadata[propertyName] = metadata;
+        const metadata: any = attributesMetadata[propertyName];
+        if (metadata.nested) {
+          this[AttributeMetadata][propertyName].hasDirtyAttributes = !_.isEqual(
+            attributesMetadata[propertyName].oldValue,
+            attributesMetadata[propertyName].newValue
+          );
+          this[AttributeMetadata][propertyName].serialisationValue = attributesMetadata[propertyName].converter(
+            Reflect.getMetadata('design:type', this, propertyName),
+            _.cloneDeep(attributesMetadata[propertyName].newValue),
+            true
+          );
         }
       }
     }
+  }
 
-    this[AttributeMetadata] = attributesMetadata;
+  rollbackAttributes(): void {
+    const attributesMetadata: any = this[AttributeMetadataIndex];
+    for (const propertyName in attributesMetadata) {
+      if (attributesMetadata.hasOwnProperty(propertyName)) {
+        if (attributesMetadata[propertyName].hasDirtyAttributes) {
+          this[propertyName] = _.cloneDeep(attributesMetadata[propertyName].oldValue);
+        }
+      }
+    }
   }
 
   get modelConfig(): ModelConfig {
@@ -226,7 +256,7 @@ export class JsonApiModel {
     const peek = this._datastore.peekRecord(modelType, data.id);
 
     if (peek) {
-      _.extend(peek, data.attributes);
+      _.extend(peek, this._datastore.transformSerializedNamesToPropertyNames(modelType, data.attributes));
       return peek;
     }
 
