@@ -92,11 +92,11 @@ export abstract class Http2AdapterService {
       headers = headers.delete('X-Push-Related');
     }
 
-    const httpRequestOptions: object = Object.assign({}, requestOptions.requestOptions, { headers });
+    const httpRequestOptions = Object.assign({}, requestOptions.requestOptions, { headers, observe: 'response' });
 
     const mainRequest$ = this.http.get(requestOptions.requestUrl, httpRequestOptions).pipe(
       map((response: HttpResponse<object>) => {
-        const requestBody: { data: any } = (response.body || response) as { data: any };
+        const requestBody: { data: any } = response.body as { data: any };
 
         if (this.isMultipleModelsFetched(requestBody)) {
           // tslint:disable-next-line:max-line-length
