@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
@@ -95,16 +95,18 @@ export abstract class Http2AdapterService {
     const httpRequestOptions: object = Object.assign({}, requestOptions.requestOptions, { headers });
 
     const mainRequest$ = this.http.get(requestOptions.requestUrl, httpRequestOptions).pipe(
-      map((response: any) => {
-        if (this.isMultipleModelsFetched(response)) {
+      map((response: HttpResponse<object>) => {
+        const requestBody: { data: any } = (response.body || response) as { data: any };
+
+        if (this.isMultipleModelsFetched(requestBody)) {
           // tslint:disable-next-line:max-line-length
-          const modelType = requestOptions.modelType || (response.data[0] ? this.getModelClassFromType(response.data[0].type) : null);
-          const models = modelType ? this.generateModels(response.data, modelType) : [];
+          const modelType = requestOptions.modelType || (requestBody.data[0] ? this.getModelClassFromType(requestBody.data[0].type) : null);
+          const models = modelType ? this.generateModels(requestBody.data, modelType) : [];
           // tslint:disable-next-line:max-line-length
-          return requestOptions.modelType ? new JsonApiQueryData(models, this.parseMeta(response, requestOptions.modelType)) : models;
+          return requestOptions.modelType ? new JsonApiQueryData(models, this.parseMeta(requestBody, requestOptions.modelType)) : models;
         } else {
-          const modelType = this.getModelClassFromType(response.data.type);
-          const relationshipModel = this.generateModel(response.data, modelType);
+          const modelType = this.getModelClassFromType(requestBody.data.type);
+          const relationshipModel = this.generateModel(requestBody.data, modelType);
 
           this.addToStore(relationshipModel);
 
@@ -219,8 +221,8 @@ export abstract class Http2AdapterService {
     });
   }
 
-  private isMultipleModelsFetched(response: any): boolean {
-    return Array.isArray(response.data);
+  private isMultipleModelsFetched(requestBody: any): boolean {
+    return Array.isArray(requestBody.data);
   }
 
   protected abstract generateModel<T extends JsonApiModel>(

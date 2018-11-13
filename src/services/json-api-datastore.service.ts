@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpHeaders, HttpResponse, HttpErrorResponse } from '@angular/common/http';
+import { HttpHeaders, HttpResponse, HttpErrorResponse, HttpClient } from '@angular/common/http';
 import find from 'lodash-es/find';
 import { map, catchError } from 'rxjs/operators';
 import { throwError, of, Observable } from 'rxjs';
@@ -41,6 +41,10 @@ export class JsonApiDatastore extends Http2AdapterService {
   }
 
   protected config: DatastoreConfig;
+
+  constructor(protected http: HttpClient) {
+    super(http);
+  }
 
   public findAll<T extends JsonApiModel>(
     modelType: ModelType<T>,
