@@ -54,7 +54,7 @@ export class JsonApiDatastore extends Http2AdapterService {
     http2: boolean = false
   ): Observable<JsonApiQueryData<T>> {
     const url: string = this.buildUrl(modelType, params, undefined, customUrl);
-    const requestOptions: RequestOptions = this.buildRequestOptions({ headers });
+    const requestOptions: RequestOptions = this.buildRequestOptions({ headers, observe: 'response' });
 
     if (!http2) {
       return this.http.get(url, requestOptions)
