@@ -49,9 +49,9 @@ var Http2AdapterService = /** @class */ (function () {
         else {
             headers = headers.delete('X-Push-Related');
         }
-        var httpRequestOptions = Object.assign({}, requestOptions.requestOptions, { headers: headers });
+        var httpRequestOptions = Object.assign({}, requestOptions.requestOptions, { headers: headers, observe: 'response' });
         var mainRequest$ = this.http.get(requestOptions.requestUrl, httpRequestOptions).pipe(operators_1.map(function (response) {
-            var requestBody = (response.body || response);
+            var requestBody = response.body;
             if (_this.isMultipleModelsFetched(requestBody)) {
                 // tslint:disable-next-line:max-line-length
                 var modelType = requestOptions.modelType || (requestBody.data[0] ? _this.getModelClassFromType(requestBody.data[0].type) : null);

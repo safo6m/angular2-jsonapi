@@ -56,7 +56,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         var _this = this;
         if (http2 === void 0) { http2 = false; }
         var url = this.buildUrl(modelType, params, undefined, customUrl);
-        var requestOptions = this.buildRequestOptions({ headers: headers });
+        var requestOptions = this.buildRequestOptions({ headers: headers, observe: 'response' });
         if (!http2) {
             return this.http.get(url, requestOptions)
                 .pipe(operators_1.map(function (res) { return _this.extractQueryData(res, modelType, true); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
