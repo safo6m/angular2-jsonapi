@@ -51,16 +51,17 @@ var Http2AdapterService = /** @class */ (function () {
         }
         var httpRequestOptions = Object.assign({}, requestOptions.requestOptions, { headers: headers });
         var mainRequest$ = this.http.get(requestOptions.requestUrl, httpRequestOptions).pipe(operators_1.map(function (response) {
-            if (_this.isMultipleModelsFetched(response)) {
+            var requestBody = (response.body || response);
+            if (_this.isMultipleModelsFetched(requestBody)) {
                 // tslint:disable-next-line:max-line-length
-                var modelType = requestOptions.modelType || (response.data[0] ? _this.getModelClassFromType(response.data[0].type) : null);
-                var models = modelType ? _this.generateModels(response.data, modelType) : [];
+                var modelType = requestOptions.modelType || (requestBody.data[0] ? _this.getModelClassFromType(requestBody.data[0].type) : null);
+                var models = modelType ? _this.generateModels(requestBody.data, modelType) : [];
                 // tslint:disable-next-line:max-line-length
-                return requestOptions.modelType ? new json_api_query_data_1.JsonApiQueryData(models, _this.parseMeta(response, requestOptions.modelType)) : models;
+                return requestOptions.modelType ? new json_api_query_data_1.JsonApiQueryData(models, _this.parseMeta(requestBody, requestOptions.modelType)) : models;
             }
             else {
-                var modelType = _this.getModelClassFromType(response.data.type);
-                var relationshipModel = _this.generateModel(response.data, modelType);
+                var modelType = _this.getModelClassFromType(requestBody.data.type);
+                var relationshipModel = _this.generateModel(requestBody.data, modelType);
                 _this.addToStore(relationshipModel);
                 if (requestOptions.parentModel && requestOptions.parentRelationshipName) {
                     requestOptions.parentModel[requestOptions.parentRelationshipName] = relationshipModel;
@@ -142,8 +143,8 @@ var Http2AdapterService = /** @class */ (function () {
             return !includes.some(function (name) { return name.startsWith(relationshipName + "."); });
         });
     };
-    Http2AdapterService.prototype.isMultipleModelsFetched = function (response) {
-        return Array.isArray(response.data);
+    Http2AdapterService.prototype.isMultipleModelsFetched = function (requestBody) {
+        return Array.isArray(requestBody.data);
     };
     return Http2AdapterService;
 }());
