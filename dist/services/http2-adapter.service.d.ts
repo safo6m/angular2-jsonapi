@@ -1,4 +1,4 @@
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { JsonApiQueryData } from './../models/json-api-query-data';
 import { ModelType } from './json-api-datastore.service';
 import { JsonApiModel } from './../models/json-api.model';
@@ -29,9 +29,12 @@ export declare abstract class Http2AdapterService {
     private generateModels;
     private filterUnecessaryIncludes;
     private isMultipleModelsFetched;
+    private isApiV1Call;
     protected abstract generateModel<T extends JsonApiModel>(modelData: any, modelType: ModelType<T>): T;
     protected abstract parseMeta(body: any, modelType: ModelType<JsonApiModel>): any;
     abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
     protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
     protected abstract handleError(error: any): Observable<any>;
+    protected abstract extractQueryData<T extends JsonApiModel>(response: HttpResponse<object>, modelType: ModelType<T>, withMeta?: boolean): Array<T> | JsonApiQueryData<T>;
+    protected abstract extractRecordData<T extends JsonApiModel>(res: HttpResponse<Object>, modelType: ModelType<T>, model?: T): T;
 }

@@ -111,14 +111,36 @@ var Http2AdapterService = /** @class */ (function () {
                 var requestOptions = {
                     headers: requestHeaders
                 };
-                var request$ = _this.makeHttp2Request({
-                    requestOptions: requestOptions,
-                    requestUrl: relationshipUrl,
-                    relationshipNames: deeperRelationshipNames,
-                    parentModel: model,
-                    parentRelationshipName: relationshipName
-                });
-                requests$.push(request$);
+                if (_this.isApiV1Call(relationshipUrl)) {
+                    var httpRequestOptions = Object.assign({}, requestOptions, { observe: 'response' });
+                    _this.http.get(relationshipUrl, httpRequestOptions).pipe(operators_1.map(function (response) {
+                        var responseBody = response.body;
+                        if (_this.isMultipleModelsFetched(response.body)) {
+                            var modelType = responseBody.data[0] ? _this.getModelClassFromType(responseBody.data[0].type) : null;
+                            if (!modelType) {
+                                debugger;
+                                throw new Error("Model " + modelType + " type not recognized");
+                            }
+                            else {
+                                return _this.extractQueryData(response, modelType, true);
+                            }
+                        }
+                        else {
+                            var modelType = _this.getModelClassFromType(responseBody.data.type);
+                            return _this.extractRecordData(response, modelType);
+                        }
+                    }), operators_1.catchError(function (res) { return _this.handleError(res); }));
+                }
+                else {
+                    var request$ = _this.makeHttp2Request({
+                        requestOptions: requestOptions,
+                        requestUrl: relationshipUrl,
+                        relationshipNames: deeperRelationshipNames,
+                        parentModel: model,
+                        parentRelationshipName: relationshipName
+                    });
+                    requests$.push(request$);
+                }
             }
         });
         if (!requests$.length) {
@@ -145,6 +167,9 @@ var Http2AdapterService = /** @class */ (function () {
     };
     Http2AdapterService.prototype.isMultipleModelsFetched = function (requestBody) {
         return Array.isArray(requestBody.data);
+    };
+    Http2AdapterService.prototype.isApiV1Call = function (url) {
+        return url.indexOf('api/v1') !== -1;
     };
     return Http2AdapterService;
 }());
