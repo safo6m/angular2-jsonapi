@@ -185,15 +185,39 @@ export abstract class Http2AdapterService {
           headers: requestHeaders
         };
 
-        const request$ = this.makeHttp2Request({
-          requestOptions,
-          requestUrl: relationshipUrl,
-          relationshipNames: deeperRelationshipNames,
-          parentModel: model,
-          parentRelationshipName: relationshipName
-        });
+        if (this.isApiV1Call(relationshipUrl)) {
+          const httpRequestOptions = Object.assign({}, requestOptions, { observe: 'response' });
 
-        requests$.push(request$);
+          this.http.get(relationshipUrl, httpRequestOptions).pipe(
+            map((response: HttpResponse<object>) => {
+              const responseBody = response.body as { data: any };
+
+              if (this.isMultipleModelsFetched(response.body)) {
+                const modelType = responseBody.data[0] ? this.getModelClassFromType(responseBody.data[0].type) : null;
+                if (!modelType) {
+                  debugger;
+                  throw new Error(`Model ${modelType} type not recognized`);
+                } else {
+                  return this.extractQueryData(response, modelType, true);
+                }
+              } else {
+                const modelType = this.getModelClassFromType(responseBody.data.type);
+                return this.extractRecordData(response, modelType);
+              }
+            }),
+            catchError((res: any) => this.handleError(res))
+          );
+        } else {
+          const request$ = this.makeHttp2Request({
+            requestOptions,
+            requestUrl: relationshipUrl,
+            relationshipNames: deeperRelationshipNames,
+            parentModel: model,
+            parentRelationshipName: relationshipName
+          });
+
+          requests$.push(request$);
+        }
       }
     });
 
@@ -225,6 +249,10 @@ export abstract class Http2AdapterService {
     return Array.isArray(requestBody.data);
   }
 
+  private isApiV1Call(url: string): boolean {
+    return url.indexOf('api/v1') !== -1;
+  }
+
   protected abstract generateModel<T extends JsonApiModel>(
     modelData: any,
     modelType: ModelType<T>
@@ -234,4 +262,14 @@ export abstract class Http2AdapterService {
   public abstract addToStore(modelOrModels: JsonApiModel | JsonApiModel[]): void;
   protected abstract getModelClassFromType<T extends JsonApiModel>(modelType: string): ModelType<T>;
   protected abstract handleError(error: any): Observable<any>;
+  protected abstract extractQueryData<T extends JsonApiModel>(
+    response: HttpResponse<object>,
+    modelType: ModelType<T>,
+    withMeta?: boolean
+  ): Array<T> | JsonApiQueryData<T>;
+  protected abstract extractRecordData<T extends JsonApiModel>(
+    res: HttpResponse<Object>,
+    modelType: ModelType<T>,
+    model?: T
+  ): T;
 }
