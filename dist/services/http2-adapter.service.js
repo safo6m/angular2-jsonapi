@@ -113,7 +113,7 @@ var Http2AdapterService = /** @class */ (function () {
                 };
                 if (_this.isApiV1Call(relationshipUrl)) {
                     var httpRequestOptions = Object.assign({}, requestOptions, { observe: 'response' });
-                    _this.http.get(relationshipUrl, httpRequestOptions).pipe(operators_1.map(function (response) {
+                    var call = _this.http.get(relationshipUrl, httpRequestOptions).pipe(operators_1.map(function (response) {
                         var responseBody = response.body;
                         if (_this.isMultipleModelsFetched(response.body)) {
                             var modelType = responseBody.data[0] ? _this.getModelClassFromType(responseBody.data[0].type) : null;
@@ -130,6 +130,9 @@ var Http2AdapterService = /** @class */ (function () {
                             return _this.extractRecordData(response, modelType);
                         }
                     }), operators_1.catchError(function (res) { return _this.handleError(res); }));
+                    call.subscribe(function (relationshipModel) {
+                        model[relationshipName] = relationshipModel;
+                    });
                 }
                 else {
                     var request$ = _this.makeHttp2Request({
