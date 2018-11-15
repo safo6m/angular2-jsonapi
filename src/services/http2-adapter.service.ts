@@ -188,7 +188,7 @@ export abstract class Http2AdapterService {
         if (this.isApiV1Call(relationshipUrl)) {
           const httpRequestOptions = Object.assign({}, requestOptions, { observe: 'response' });
 
-          this.http.get(relationshipUrl, httpRequestOptions).pipe(
+          const call = this.http.get(relationshipUrl, httpRequestOptions).pipe(
             map((response: HttpResponse<object>) => {
               const responseBody = response.body as { data: any };
 
@@ -207,6 +207,10 @@ export abstract class Http2AdapterService {
             }),
             catchError((res: any) => this.handleError(res))
           );
+
+          call.subscribe((relationshipModel) => {
+            model[relationshipName] = relationshipModel;
+          });
         } else {
           const request$ = this.makeHttp2Request({
             requestOptions,
