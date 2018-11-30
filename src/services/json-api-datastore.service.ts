@@ -62,17 +62,17 @@ export class JsonApiDatastore extends Http2AdapterService {
           map((res: HttpResponse<object>) => this.extractQueryData(res, modelType, true)),
           catchError((res: any) => this.handleError(res))
         );
-    } else {
-      const queryParams = params || {};
-      const includes: string = queryParams.include || '';
-
-      return super.findAll2({
-        includes,
-        modelType,
-        requestOptions,
-        requestUrl: url,
-      });
     }
+
+    const queryParams = params || {};
+    const includes: string = queryParams.include || '';
+
+    return super.findAll2({
+      includes,
+      modelType,
+      requestOptions,
+      requestUrl: url,
+    });
   }
 
   public findRecord<T extends JsonApiModel>(
@@ -92,19 +92,19 @@ export class JsonApiDatastore extends Http2AdapterService {
           map((res: HttpResponse<object>) => this.extractRecordData(res, modelType)),
           catchError((res: any) => this.handleError(res))
         );
-    } else {
-      const queryParams = params || {};
-      const includes: string = queryParams.include || '';
-
-      return super.findRecord2({
-        includes,
-        modelType,
-        requestOptions: {
-          headers: headers || new HttpHeaders()
-        },
-        requestUrl: url,
-      });
     }
+
+    const queryParams = params || {};
+    const includes: string = queryParams.include || '';
+
+    return super.findRecord2({
+      includes,
+      modelType,
+      requestOptions: {
+        headers: headers || new HttpHeaders()
+      },
+      requestUrl: url,
+    });
   }
 
   public createRecord<T extends JsonApiModel>(modelType: ModelType<T>, data?: any): T {
@@ -279,7 +279,6 @@ export class JsonApiDatastore extends Http2AdapterService {
 
     return relationShipData;
   }
-
 
   protected extractQueryData<T extends JsonApiModel>(
     response: HttpResponse<object>,
