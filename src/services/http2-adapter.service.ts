@@ -104,18 +104,18 @@ export abstract class Http2AdapterService {
           const models = modelType ? this.generateModels(requestBody.data, modelType) : [];
           // tslint:disable-next-line:max-line-length
           return requestOptions.modelType ? new JsonApiQueryData(models, this.parseMeta(requestBody, requestOptions.modelType)) : models;
-        } else {
-          const modelType = this.getModelClassFromType(requestBody.data.type);
-          const relationshipModel = this.generateModel(requestBody.data, modelType);
-
-          this.addToStore(relationshipModel);
-
-          if (requestOptions.parentModel && requestOptions.parentRelationshipName) {
-            requestOptions.parentModel[requestOptions.parentRelationshipName] = relationshipModel;
-          }
-
-          return relationshipModel;
         }
+
+        const modelType = this.getModelClassFromType(requestBody.data.type);
+        const relationshipModel = this.generateModel(requestBody.data, modelType);
+
+        this.addToStore(relationshipModel);
+
+        if (requestOptions.parentModel && requestOptions.parentRelationshipName) {
+          requestOptions.parentModel[requestOptions.parentRelationshipName] = relationshipModel;
+        }
+
+        return relationshipModel;
       }),
       map((queryData: JsonApiQueryData<T> | Array<T> | T) => {
         if (queryData instanceof JsonApiQueryData || Array.isArray(queryData)) {
