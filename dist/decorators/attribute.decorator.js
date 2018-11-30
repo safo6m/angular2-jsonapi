@@ -55,7 +55,7 @@ function Attribute(options) {
             };
         };
         var getter = function () {
-            return this['_' + propertyName];
+            return this["_" + propertyName];
         };
         var setter = function (newVal) {
             var targetType = Reflect.getMetadata('design:type', target, propertyName);
@@ -69,7 +69,7 @@ function Attribute(options) {
                     oldValue = this[symbols_1.AttributeMetadata][propertyName]['oldValue'];
                 }
             }
-            this['_' + propertyName] = convertedValue;
+            this["_" + propertyName] = convertedValue;
             setMetadata(this, oldValue, convertedValue);
         };
         if (delete target[propertyName]) {

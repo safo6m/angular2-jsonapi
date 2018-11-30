@@ -61,16 +61,14 @@ var JsonApiDatastore = /** @class */ (function (_super) {
             return this.http.get(url, requestOptions)
                 .pipe(operators_1.map(function (res) { return _this.extractQueryData(res, modelType, true); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
         }
-        else {
-            var queryParams = params || {};
-            var includes = queryParams.include || '';
-            return _super.prototype.findAll2.call(this, {
-                includes: includes,
-                modelType: modelType,
-                requestOptions: requestOptions,
-                requestUrl: url,
-            });
-        }
+        var queryParams = params || {};
+        var includes = queryParams.include || '';
+        return _super.prototype.findAll2.call(this, {
+            includes: includes,
+            modelType: modelType,
+            requestOptions: requestOptions,
+            requestUrl: url,
+        });
     };
     JsonApiDatastore.prototype.findRecord = function (modelType, id, params, headers, customUrl, http2) {
         var _this = this;
@@ -81,18 +79,16 @@ var JsonApiDatastore = /** @class */ (function (_super) {
             return this.http.get(url, requestOptions)
                 .pipe(operators_1.map(function (res) { return _this.extractRecordData(res, modelType); }), operators_1.catchError(function (res) { return _this.handleError(res); }));
         }
-        else {
-            var queryParams = params || {};
-            var includes = queryParams.include || '';
-            return _super.prototype.findRecord2.call(this, {
-                includes: includes,
-                modelType: modelType,
-                requestOptions: {
-                    headers: headers || new http_1.HttpHeaders()
-                },
-                requestUrl: url,
-            });
-        }
+        var queryParams = params || {};
+        var includes = queryParams.include || '';
+        return _super.prototype.findRecord2.call(this, {
+            includes: includes,
+            modelType: modelType,
+            requestOptions: {
+                headers: headers || new http_1.HttpHeaders()
+            },
+            requestUrl: url,
+        });
     };
     JsonApiDatastore.prototype.createRecord = function (modelType, data) {
         return new modelType(this, { attributes: data });
@@ -115,7 +111,6 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         var modelType = model.constructor;
         var modelConfig = model.modelConfig;
         var typeName = modelConfig.type;
-        var requestHeaders = this.buildHttpHeaders(headers);
         var relationships = this.getRelationships(model);
         var url = this.buildUrl(modelType, params, model.id, customUrl);
         var httpCall;

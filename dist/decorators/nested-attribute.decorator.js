@@ -37,7 +37,7 @@ function NestedAttribute(options) {
             Reflect.defineMetadata('AttributeMapping', mappingMetadata, target);
         };
         var updateMetadata = function (instance) {
-            var newValue = instance['_' + propertyName];
+            var newValue = instance["_" + propertyName];
             if (!instance[symbols_1.AttributeMetadata]) {
                 instance[symbols_1.AttributeMetadata] = {};
             }
@@ -58,11 +58,11 @@ function NestedAttribute(options) {
             }
         };
         var getter = function () {
-            return this['_' + propertyName];
+            return this["_" + propertyName];
         };
         var setter = function (newVal) {
             var targetType = Reflect.getMetadata('design:type', target, propertyName);
-            this['_' + propertyName] = converter(targetType, newVal);
+            this["_" + propertyName] = converter(targetType, newVal);
             updateMetadata(this);
         };
         if (delete target[propertyName]) {

@@ -40,13 +40,13 @@ function JsonAttribute(options) {
         };
         var getter = function () {
             if (this.nestedDataSerialization) {
-                return converter(Reflect.getMetadata('design:type', target, propertyName), this['_' + propertyName], true);
+                return converter(Reflect.getMetadata('design:type', target, propertyName), this["_" + propertyName], true);
             }
-            return this['_' + propertyName];
+            return this["_" + propertyName];
         };
         var setter = function (newVal) {
             var targetType = Reflect.getMetadata('design:type', target, propertyName);
-            this['_' + propertyName] = converter(targetType, newVal);
+            this["_" + propertyName] = converter(targetType, newVal);
         };
         if (delete target[propertyName]) {
             saveAnnotations();

@@ -54,20 +54,18 @@ var Http2AdapterService = /** @class */ (function () {
             var requestBody = response.body;
             if (_this.isMultipleModelsFetched(requestBody)) {
                 // tslint:disable-next-line:max-line-length
-                var modelType = requestOptions.modelType || (requestBody.data[0] ? _this.getModelClassFromType(requestBody.data[0].type) : null);
-                var models = modelType ? _this.generateModels(requestBody.data, modelType) : [];
+                var modelType_1 = requestOptions.modelType || (requestBody.data[0] ? _this.getModelClassFromType(requestBody.data[0].type) : null);
+                var models = modelType_1 ? _this.generateModels(requestBody.data, modelType_1) : [];
                 // tslint:disable-next-line:max-line-length
                 return requestOptions.modelType ? new json_api_query_data_1.JsonApiQueryData(models, _this.parseMeta(requestBody, requestOptions.modelType)) : models;
             }
-            else {
-                var modelType = _this.getModelClassFromType(requestBody.data.type);
-                var relationshipModel = _this.generateModel(requestBody.data, modelType);
-                _this.addToStore(relationshipModel);
-                if (requestOptions.parentModel && requestOptions.parentRelationshipName) {
-                    requestOptions.parentModel[requestOptions.parentRelationshipName] = relationshipModel;
-                }
-                return relationshipModel;
+            var modelType = _this.getModelClassFromType(requestBody.data.type);
+            var relationshipModel = _this.generateModel(requestBody.data, modelType);
+            _this.addToStore(relationshipModel);
+            if (requestOptions.parentModel && requestOptions.parentRelationshipName) {
+                requestOptions.parentModel[requestOptions.parentRelationshipName] = relationshipModel;
             }
+            return relationshipModel;
         }), operators_1.map(function (queryData) {
             if (queryData instanceof json_api_query_data_1.JsonApiQueryData || Array.isArray(queryData)) {
                 var models = queryData instanceof json_api_query_data_1.JsonApiQueryData ? queryData.getModels() : queryData;
