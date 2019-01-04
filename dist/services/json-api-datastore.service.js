@@ -1,15 +1,6 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
+var tslib_1 = require("tslib");
 var core_1 = require("@angular/core");
 var http_1 = require("@angular/common/http");
 var find_1 = require("lodash-es/find");
@@ -30,7 +21,7 @@ var http2_adapter_service_1 = require("./http2-adapter.service");
 // tslint:disable-next-line:variable-name
 var AttributeMetadataIndex = symbols_1.AttributeMetadata;
 var JsonApiDatastore = /** @class */ (function (_super) {
-    __extends(JsonApiDatastore, _super);
+    tslib_1.__extends(JsonApiDatastore, _super);
     function JsonApiDatastore(http) {
         var _this = _super.call(this, http) || this;
         _this.http = http;
@@ -41,13 +32,14 @@ var JsonApiDatastore = /** @class */ (function (_super) {
             _this.datastoreConfig.overrides.toQueryString : _this._toQueryString;
         return _this;
     }
+    JsonApiDatastore_1 = JsonApiDatastore;
     Object.defineProperty(JsonApiDatastore.prototype, "getDirtyAttributes", {
         get: function () {
             if (this.datastoreConfig.overrides
                 && this.datastoreConfig.overrides.getDirtyAttributes) {
                 return this.datastoreConfig.overrides.getDirtyAttributes;
             }
-            return JsonApiDatastore.getDirtyAttributes;
+            return JsonApiDatastore_1.getDirtyAttributes;
         },
         enumerable: true,
         configurable: true
@@ -412,13 +404,11 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         }
         return modelTypeClass;
     };
-    JsonApiDatastore.decorators = [
-        { type: core_1.Injectable },
-    ];
-    /** @nocollapse */
-    JsonApiDatastore.ctorParameters = function () { return [
-        { type: http_1.HttpClient }
-    ]; };
+    var JsonApiDatastore_1;
+    JsonApiDatastore = JsonApiDatastore_1 = tslib_1.__decorate([
+        core_1.Injectable(),
+        tslib_1.__metadata("design:paramtypes", [http_1.HttpClient])
+    ], JsonApiDatastore);
     return JsonApiDatastore;
 }(http2_adapter_service_1.Http2AdapterService));
 exports.JsonApiDatastore = JsonApiDatastore;
