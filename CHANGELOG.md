@@ -1,4 +1,14 @@
-# [6.1.0]
+# [7.0.0-beta]
+
+  ### BREAKING CHANGES
+
+  * Upgraded the library to Angular 7
+
+# [6.1.2]
+
+  * Added support for custom request options
+
+# [6.1.2-beta]
 
   * Added support for custom request options
 
