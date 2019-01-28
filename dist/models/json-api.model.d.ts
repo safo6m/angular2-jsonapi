@@ -12,7 +12,7 @@ export declare class JsonApiModel {
     constructor(internalDatastore: JsonApiDatastore, data?: any);
     isModelInitialization(): boolean;
     syncRelationships(data: any, included: any, remainingModels?: Array<any>): void;
-    save(params?: any, headers?: HttpHeaders, customUrl?: string): Observable<this>;
+    save(params?: any, headers?: HttpHeaders, customUrl?: string, method?: string): Observable<this>;
     readonly hasDirtyAttributes: boolean;
     private checkChanges;
     private rollbackAttributes;

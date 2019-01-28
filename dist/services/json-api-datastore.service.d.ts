@@ -20,7 +20,7 @@ export declare class JsonApiDatastore extends Http2AdapterService {
     findRecord<T extends JsonApiModel>(modelType: ModelType<T>, id: string, params?: any, headers?: HttpHeaders, customUrl?: string, http2?: boolean): Observable<T>;
     createRecord<T extends JsonApiModel>(modelType: ModelType<T>, data?: any): T;
     private static getDirtyAttributes;
-    saveRecord<T extends JsonApiModel>(attributesMetadata: any, model: T, params?: any, headers?: HttpHeaders, customUrl?: string): Observable<T>;
+    saveRecord<T extends JsonApiModel>(attributesMetadata: any, model: T, params?: any, headers?: HttpHeaders, customUrl?: string, method?: string): Observable<T>;
     deleteRecord<T extends JsonApiModel>(modelType: ModelType<T>, id: string, headers?: HttpHeaders, customUrl?: string): Observable<Response>;
     peekRecord<T extends JsonApiModel>(modelType: ModelType<T>, id: string): T | null;
     peekAll<T extends JsonApiModel>(modelType: ModelType<T>): Array<T>;

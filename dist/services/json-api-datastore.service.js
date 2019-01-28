@@ -98,7 +98,7 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         }
         return dirtyData;
     };
-    JsonApiDatastore.prototype.saveRecord = function (attributesMetadata, model, params, headers, customUrl) {
+    JsonApiDatastore.prototype.saveRecord = function (attributesMetadata, model, params, headers, customUrl, method) {
         var _this = this;
         var modelType = model.constructor;
         var modelConfig = model.modelConfig;
@@ -116,7 +116,12 @@ var JsonApiDatastore = /** @class */ (function (_super) {
         };
         var requestOptions = this.buildRequestOptions({ headers: headers, observe: 'response' });
         if (model.id) {
-            httpCall = this.http.patch(url, body, requestOptions);
+            if (method && method.toLowerCase() === 'put') {
+                httpCall = this.http.put(url, body, requestOptions);
+            }
+            else {
+                httpCall = this.http.patch(url, body, requestOptions);
+            }
         }
         else {
             httpCall = this.http.post(url, body, requestOptions);

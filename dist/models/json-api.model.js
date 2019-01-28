@@ -41,10 +41,10 @@ var JsonApiModel = /** @class */ (function () {
         }
         this.lastSyncModels = included;
     };
-    JsonApiModel.prototype.save = function (params, headers, customUrl) {
+    JsonApiModel.prototype.save = function (params, headers, customUrl, method) {
         this.checkChanges();
         var attributesMetadata = this[AttributeMetadataIndex];
-        return this.internalDatastore.saveRecord(attributesMetadata, this, params, headers, customUrl);
+        return this.internalDatastore.saveRecord(attributesMetadata, this, params, headers, customUrl, method);
     };
     Object.defineProperty(JsonApiModel.prototype, "hasDirtyAttributes", {
         get: function () {
