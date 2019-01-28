@@ -132,7 +132,8 @@ export class JsonApiDatastore extends Http2AdapterService {
     model: T,
     params?: any,
     headers?: HttpHeaders,
-    customUrl?: string
+    customUrl?: string,
+    method?: string
   ): Observable<T> {
     const modelType = <ModelType<T>>model.constructor;
     const modelConfig: ModelConfig = model.modelConfig;
@@ -153,7 +154,11 @@ export class JsonApiDatastore extends Http2AdapterService {
     const requestOptions: object = this.buildRequestOptions({ headers, observe: 'response' });
 
     if (model.id) {
-      httpCall = this.http.patch<object>(url, body, requestOptions) as Observable<HttpResponse<object>>;
+      if (method && method.toLowerCase() === 'put') {
+        httpCall = this.http.put<object>(url, body, requestOptions) as Observable<HttpResponse<object>>;
+      } else {
+        httpCall = this.http.patch<object>(url, body, requestOptions) as Observable<HttpResponse<object>>;
+      }
     } else {
       httpCall = this.http.post<object>(url, body, requestOptions) as Observable<HttpResponse<object>>;
     }
